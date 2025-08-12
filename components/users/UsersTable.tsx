@@ -66,21 +66,24 @@ const getRoleBadgeVariant = (role: RestaurantUser['role']) => {
       return 'secondary';
     case 'waiter':
       return 'outline';
-    case 'admin':
-      return 'destructive';
     default:
       return 'outline';
   }
 };
 
-const getRoleDisplayName = (role: RestaurantUser['role']) => {
-  const roleNames = {
+const getRoleDisplayName = (role: RestaurantUser['role'] | undefined) => {
+  const roleNames: Record<string, string> = {
     waiter: 'Konobar',
     manager: 'Manager',
     chef: 'Kuvar',
     admin: 'Administrator',
   };
-  return roleNames[role] || role;
+
+  if (role && role in roleNames) {
+    return roleNames[role];
+  }
+
+  return role || 'Unknown Role';
 };
 
 // Loading skeleton component for cards
