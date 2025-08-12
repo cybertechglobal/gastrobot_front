@@ -21,7 +21,7 @@ import {
   SelectGroup,
 } from '@/components/ui/select';
 import { Clock, MapPin } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/utils';
 
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

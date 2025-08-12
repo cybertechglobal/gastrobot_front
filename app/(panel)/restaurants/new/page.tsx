@@ -22,7 +22,7 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Clock, Upload, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/utils';
 import { Stepper } from '@/components/Stepper';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

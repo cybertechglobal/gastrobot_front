@@ -1,5 +1,6 @@
 import { UserDetail } from './user';
 
+export type ReservationStatus = 'pending' | 'confirmed' | 'rejected';
 export interface Reservation {
   id: string;
   createdAt: string;
@@ -7,7 +8,7 @@ export interface Reservation {
   deletedAt: string | null;
   peopleCount: number;
   reservationStart: string;
-  status: 'pending' | 'confirmed' | 'rejected';
+  status: ReservationStatus;
   area: 'inside' | 'outside';
   rejectionReason: string | null;
   confirmedMessage: string | null;

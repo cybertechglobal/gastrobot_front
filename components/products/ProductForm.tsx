@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/command';
 import { toast } from 'sonner';
 import { X, Plus, Upload, Check, ChevronsUpDown, Search } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/utils';
 import IngredientModal from '../ingredients/IngredientModal';
 import { createProduct, updateProduct } from '@/lib/api/products';
 import {

@@ -21,26 +21,26 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
-import { Filter, X, Search } from 'lucide-react';
-import { startOfDay, endOfDay, addDays } from 'date-fns';
+import { Filter, X, ShoppingCart, UtensilsCrossed } from 'lucide-react';
+import { startOfDay, endOfDay, format } from 'date-fns';
 
-const filterSchema = z.object({
-  userName: z.string().optional(),
-  reservationNumber: z.string().optional(),
+const orderFilterSchema = z.object({
+  orderNumber: z.string().optional(),
+  tableNum: z.string().optional(),
   selectedDate: z.string().optional(),
   status: z.enum(['all', 'confirmed', 'rejected']),
 });
 
-export type FilterFormData = z.infer<typeof filterSchema>;
+export type OrderFilterFormData = z.infer<typeof orderFilterSchema>;
 
-interface FilterFormProps {
+interface OrderFilterFormProps {
   onFiltersChange: (
-    filters: FilterFormData & {
+    filters: OrderFilterFormData & {
       from?: string;
       to?: string;
     }
   ) => void;
-  initialFilters?: Partial<FilterFormData>;
+  initialFilters?: Partial<OrderFilterFormData>;
   className?: string;
   debounceTime?: number; // Dodano za konfiguraciju debounce vremena
 }
@@ -62,18 +62,36 @@ const useDebounce = <T,>(value: T, delay: number): T => {
   return debouncedValue;
 };
 
-const FilterForm: React.FC<FilterFormProps> = ({
+const OrderFilterForm: React.FC<OrderFilterFormProps> = ({
   onFiltersChange,
   initialFilters = {},
   className = '',
   debounceTime = 700, // Default 700ms debounce
 }) => {
-  const form = useForm<FilterFormData>({
-    resolver: zodResolver(filterSchema),
+  // Danas datum u DD.MM.YYYY formatu
+  const todayDateString = format(new Date(), 'dd.MM.yyyy');
+
+  // Funkcije za konverziju formata
+  const convertToInputFormat = (dateStr: string): string => {
+    if (!dateStr) return '';
+    // Konvertuje DD.MM.YYYY u YYYY-MM-DD za HTML input
+    const [day, month, year] = dateStr.split('.');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  };
+
+  const convertFromInputFormat = (dateStr: string): string => {
+    if (!dateStr) return '';
+    // Konvertuje YYYY-MM-DD u DD.MM.YYYY
+    const [year, month, day] = dateStr.split('-');
+    return `${day}.${month}.${year}`;
+  };
+
+  const form = useForm<OrderFilterFormData>({
+    resolver: zodResolver(orderFilterSchema),
     defaultValues: {
-      userName: '',
-      reservationNumber: '',
-      selectedDate: '',
+      orderNumber: '',
+      tableNum: '',
+      selectedDate: todayDateString, // Default je danas
       status: 'all',
       ...initialFilters,
     },
@@ -81,35 +99,40 @@ const FilterForm: React.FC<FilterFormProps> = ({
 
   const watchedValues = form.watch();
 
-  // Debounce samo search polja
-  const debounceduserName = useDebounce(
-    watchedValues.userName || '',
+  // Debounce search fields
+  const debouncedOrderNumber = useDebounce(
+    watchedValues.orderNumber || '',
     debounceTime
   );
-  const debouncedReservationNumber = useDebounce(
-    watchedValues.reservationNumber || '',
+  const debouncedTableNum = useDebounce(
+    watchedValues.tableNum || '',
     debounceTime
   );
 
   // Transform filters and handle date conversion
-  const transformFilters = (data: FilterFormData) => {
+  const transformFilters = (data: OrderFilterFormData) => {
     const transformed: any = {
       ...data,
     };
 
     // Handle date transformation to ISO format with timezone
     if (data.selectedDate) {
-      const selectedDate = new Date(data.selectedDate);
+      // Konvertuj DD.MM.YYYY u Date objekat
+      const [day, month, year] = data.selectedDate.split('.');
+      const selectedDate = new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day)
+      );
 
       transformed.from = startOfDay(selectedDate).toISOString();
       transformed.to = endOfDay(selectedDate).toISOString();
     } else {
-      // Ako nema datuma, prikaži od danas do sutra
+      // Ako nema datuma, prikaži samo za danas
       const today = new Date();
-      const tomorrow = addDays(today, 1);
 
       transformed.from = startOfDay(today).toISOString();
-      transformed.to = endOfDay(tomorrow).toISOString();
+      transformed.to = endOfDay(today).toISOString();
     }
 
     console.log(transformed);
@@ -119,9 +142,9 @@ const FilterForm: React.FC<FilterFormProps> = ({
 
   // Effect za debounced search polja
   React.useEffect(() => {
-    const filters: FilterFormData = {
-      userName: debounceduserName,
-      reservationNumber: debouncedReservationNumber,
+    const filters: OrderFilterFormData = {
+      orderNumber: debouncedOrderNumber,
+      tableNum: debouncedTableNum,
       selectedDate: watchedValues.selectedDate,
       status: watchedValues.status,
     };
@@ -129,8 +152,8 @@ const FilterForm: React.FC<FilterFormProps> = ({
     const transformedFilters = transformFilters(filters);
     onFiltersChange(transformedFilters);
   }, [
-    debounceduserName,
-    debouncedReservationNumber,
+    debouncedOrderNumber,
+    debouncedTableNum,
     watchedValues.selectedDate,
     watchedValues.status,
     onFiltersChange,
@@ -140,9 +163,9 @@ const FilterForm: React.FC<FilterFormProps> = ({
   React.useEffect(() => {
     // Ovaj effect se poziva samo kada se promeni datum ili status
     // Search polja se ignorišu jer imaju svoj debounced effect
-    const filters: FilterFormData = {
-      userName: debounceduserName, // Koristimo već debounced vrednost
-      reservationNumber: debouncedReservationNumber, // Koristimo već debounced vrednost
+    const filters: OrderFilterFormData = {
+      orderNumber: debouncedOrderNumber, // Koristimo već debounced vrednost
+      tableNum: debouncedTableNum, // Koristimo već debounced vrednost
       selectedDate: watchedValues.selectedDate,
       status: watchedValues.status,
     };
@@ -153,40 +176,45 @@ const FilterForm: React.FC<FilterFormProps> = ({
 
   const handleClearFilters = () => {
     form.reset({
-      userName: '',
-      reservationNumber: '',
-      selectedDate: '',
+      orderNumber: '',
+      tableNum: '',
+      selectedDate: todayDateString, // Reset na danas umesto prazno
       status: 'all',
     });
   };
 
   const hasActiveFilters =
-    watchedValues.userName ||
-    watchedValues.reservationNumber ||
-    watchedValues.selectedDate ||
+    watchedValues.orderNumber ||
+    watchedValues.tableNum ||
+    (watchedValues.selectedDate &&
+      watchedValues.selectedDate !== todayDateString) ||
     watchedValues.status !== 'all';
 
   const getActiveFilterBadges = () => {
     const badges = [];
 
-    if (watchedValues.userName) {
+    if (watchedValues.orderNumber) {
       badges.push(
-        <Badge key="search" variant="outline" className="text-xs">
-          Pretraga: {watchedValues.userName}
+        <Badge key="order" variant="outline" className="text-xs">
+          Porudžbina: {watchedValues.orderNumber}
         </Badge>
       );
     }
 
-    if (watchedValues.reservationNumber) {
+    if (watchedValues.tableNum) {
       badges.push(
-        <Badge key="reservation" variant="outline" className="text-xs">
-          Kod: {watchedValues.reservationNumber}
+        <Badge key="table" variant="outline" className="text-xs">
+          Sto: {watchedValues.tableNum}
         </Badge>
       );
     }
 
-    if (watchedValues.selectedDate) {
-      const date = new Date(watchedValues.selectedDate);
+    if (
+      watchedValues.selectedDate &&
+      watchedValues.selectedDate !== todayDateString
+    ) {
+      const [day, month, year] = watchedValues.selectedDate.split('.');
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       badges.push(
         <Badge key="date" variant="outline" className="text-xs">
           Datum: {date.toLocaleDateString('sr-RS')}
@@ -198,7 +226,7 @@ const FilterForm: React.FC<FilterFormProps> = ({
       badges.push(
         <Badge key="status" variant="outline" className="text-xs">
           Status:{' '}
-          {watchedValues.status === 'confirmed' ? 'Potvrđeno' : 'Odbijeno'}
+          {watchedValues.status === 'confirmed' ? 'Prihvaćeno' : 'Odbijeno'}
         </Badge>
       );
     }
@@ -214,7 +242,7 @@ const FilterForm: React.FC<FilterFormProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
             <Filter className="w-4 h-4 mr-2" />
-            Filteri za rezervacije
+            Filteri za porudžbine
           </CardTitle>
           {hasActiveFilters && (
             <Button
@@ -235,19 +263,19 @@ const FilterForm: React.FC<FilterFormProps> = ({
         <Form {...form}>
           <form className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Search Term */}
+              {/* Order Number */}
               <FormField
                 control={form.control}
-                name="userName"
+                name="orderNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pretraži po imenu</FormLabel>
+                    <FormLabel>Broj porudžbine</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <ShoppingCart className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input
                           {...field}
-                          placeholder="Ime osobe..."
+                          placeholder="ORD123..."
                           className="pl-10"
                         />
                       </div>
@@ -257,19 +285,19 @@ const FilterForm: React.FC<FilterFormProps> = ({
                 )}
               />
 
-              {/* Reservation Number */}
+              {/* Table Number */}
               <FormField
                 control={form.control}
-                name="reservationNumber"
+                name="tableNum"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Jedinstveni kod</FormLabel>
+                    <FormLabel>Broj stola</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <UtensilsCrossed className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input
                           {...field}
-                          placeholder="npr: HR115DK"
+                          placeholder="5..."
                           className="pl-10"
                         />
                       </div>
@@ -287,11 +315,20 @@ const FilterForm: React.FC<FilterFormProps> = ({
                   <FormItem>
                     <FormLabel>Datum</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" className="w-full" />
+                      <Input
+                        type="date"
+                        className="w-full"
+                        value={convertToInputFormat(
+                          field.value || todayDateString
+                        )}
+                        onChange={(e) => {
+                          const convertedDate = convertFromInputFormat(
+                            e.target.value
+                          );
+                          field.onChange(convertedDate);
+                        }}
+                      />
                     </FormControl>
-                    {/* <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Prazno = naredna 2 dana
-                    </div> */}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -315,7 +352,7 @@ const FilterForm: React.FC<FilterFormProps> = ({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="all">Svi statusi</SelectItem>
-                        <SelectItem value="confirmed">Potvrđeno</SelectItem>
+                        <SelectItem value="confirmed">Prihvaćeno</SelectItem>
                         <SelectItem value="rejected">Odbijeno</SelectItem>
                       </SelectContent>
                     </Select>
@@ -341,4 +378,4 @@ const FilterForm: React.FC<FilterFormProps> = ({
   );
 };
 
-export default FilterForm;
+export default OrderFilterForm;

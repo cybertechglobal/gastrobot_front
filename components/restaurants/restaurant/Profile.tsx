@@ -45,7 +45,9 @@ import RestaurantIngredients from '@/components/ingredients/restaurant-ingredien
 import { Restaurant } from '@/types/restaurant';
 import { Menu } from '@/types/menu';
 import RestaurantSettings from './RestaurantSettings';
-import UnifiedReservationDashboard from '@/components/reservations/Reservations';
+import ReservationDashboard from '@/components/reservations/Reservations';
+import { useSession } from 'next-auth/react';
+import { UserRole } from '@/types/user';
 
 interface LogoUploadModalProps {
   isOpen: boolean;
@@ -61,6 +63,7 @@ interface BasicInfoSectionProps {
   handleStatusChange: (status: 'active' | 'inactive') => void;
   status: 'active' | 'inactive';
   router: any;
+  role: UserRole;
 }
 
 interface MenuSectionProps {
@@ -87,6 +90,7 @@ interface Section {
   icon: JSX.Element;
   description: string;
   color: string;
+  isVisible: boolean;
 }
 
 const fullWeek = [
@@ -272,6 +276,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   restaurant,
   handleStatusChange,
   status,
+  role,
 }) => (
   <div className="space-y-6">
     <div className="flex gap-5 mb-5 items-center">
@@ -288,23 +293,25 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
     </div>
 
     {/* Status Controls */}
-    <div className="flex items-center space-x-4 mb-6">
-      <Select value={status} onValueChange={handleStatusChange}>
-        <SelectTrigger className="w-48 bg-slate-800 border border-slate-700 text-slate-200">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="bg-slate-900 text-slate-100">
-          <SelectItem value="active">
-            <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2" />
-            Aktivan
-          </SelectItem>
-          <SelectItem value="inactive">
-            <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-2" />
-            Neaktivan
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+    {role === 'root' && (
+      <div className="flex items-center space-x-4 mb-6">
+        <Select value={status} onValueChange={handleStatusChange}>
+          <SelectTrigger className="w-48 bg-slate-800 border border-slate-700 text-slate-200">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-slate-900 text-slate-100">
+            <SelectItem value="active">
+              <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2" />
+              Aktivan
+            </SelectItem>
+            <SelectItem value="inactive">
+              <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-2" />
+              Neaktivan
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    )}
 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       <div className="space-y-1">
@@ -344,7 +351,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
 );
 
 // Products Section Component
-const ProductsSection: React.FC = () => <Products />;
+const ProductsSection = ({ restaurantId }: { restaurantId: string }) => (
+  <Products restaurantId={restaurantId} />
+);
 
 // Menu Section Component
 const MenuSection: React.FC<MenuSectionProps> = ({ restaurant, menus }) => (
@@ -385,6 +394,10 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
   const [currentLogo, setCurrentLogo] = useState<string | undefined>(
     restaurant?.logoUrl
   );
+
+  const { data: session } = useSession();
+
+  const userRole = session?.user.restaurantUsers[0]?.role || undefined;
 
   // Status dropdown state
   const [status, setStatus] = useState<'active' | 'inactive'>(
@@ -430,6 +443,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       icon: <Settings className="w-6 h-6" />,
       description: 'Upravljanje osnovnim informacijama o restoranu',
       color: 'from-blue-500 to-blue-600',
+      isVisible: true,
     },
     {
       id: 'sastojci',
@@ -437,6 +451,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       icon: <Package className="w-6 h-6" />,
       description: 'Upravljanje sastojcima',
       color: 'from-green-500 to-green-600',
+      isVisible: true,
     },
     {
       id: 'proizvodi',
@@ -444,6 +459,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       icon: <Package className="w-6 h-6" />,
       description: 'Upravljanje proizvodima i inventarom',
       color: 'from-green-500 to-green-600',
+      isVisible: true,
     },
     {
       id: 'jelovnik',
@@ -451,6 +467,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       icon: <UtensilsCrossed className="w-6 h-6" />,
       description: 'Kreiranje i uređivanje jelovnika',
       color: 'from-orange-500 to-orange-600',
+      isVisible: true,
     },
     {
       id: 'korisnici',
@@ -458,6 +475,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       icon: <UsersIcon className="w-6 h-6" />,
       description: 'Upravljanje korisnicima i dozvolama',
       color: 'from-purple-500 to-purple-600',
+      isVisible: true,
     },
     {
       id: 'rezervacije',
@@ -465,6 +483,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       icon: <CheckSquare className="w-6 h-6" />,
       description: 'Upravljanje rezervacijama',
       color: 'from-purple-500 to-purple-600',
+      isVisible: userRole === 'root',
     },
     {
       id: 'podesavanja',
@@ -472,6 +491,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       icon: <Settings className="w-6 h-6" />,
       description: 'Konfigurisanje restorana',
       color: 'from-gray-500 to-gray-600',
+      isVisible: true,
     },
   ];
 
@@ -553,29 +573,32 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
 
         {/* Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sections.map((section) => (
-            <div
-              key={section.id}
-              onClick={() => navigateTo(section.id, section.title)}
-              className="group cursor-pointer bg-white dark:bg-background rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-100 dark:border-gray-800 hover:border-transparent hover:scale-105"
-            >
-              <div
-                className={`w-12 h-12 bg-gradient-to-r ${section.color} dark:from-gray-900 dark:to-gray-950 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
-              >
-                <div className="text-white">{section.icon}</div>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                {section.title}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                {section.description}
-              </p>
-              <div className="flex items-center text-primary text-sm font-medium">
-                Upravljaj
-                <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          ))}
+          {sections.map(
+            (section) =>
+              section.isVisible && (
+                <div
+                  key={section.id}
+                  onClick={() => navigateTo(section.id, section.title)}
+                  className="group cursor-pointer bg-white dark:bg-background rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-100 dark:border-gray-800 hover:border-transparent hover:scale-105"
+                >
+                  <div
+                    className={`w-12 h-12 bg-gradient-to-r ${section.color} dark:from-gray-900 dark:to-gray-950 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
+                  >
+                    <div className="text-white">{section.icon}</div>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    {section.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    {section.description}
+                  </p>
+                  <div className="flex items-center text-primary text-sm font-medium">
+                    Upravljaj
+                    <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              )
+          )}
         </div>
 
         {/* Logo Upload Modal */}
@@ -618,9 +641,12 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
               handleStatusChange={handleStatusChange}
               status={status}
               router={router}
+              role={userRole}
             />
           )}
-          {currentView === 'proizvodi' && <ProductsSection />}
+          {currentView === 'proizvodi' && (
+            <ProductsSection restaurantId={restaurant.id} />
+          )}
           {currentView === 'sastojci' && (
             <RestaurantIngredients restaurantId={restaurant.id} />
           )}
@@ -636,7 +662,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
         </div>
       )}
       {currentView === 'rezervacije' && (
-        <UnifiedReservationDashboard restaurantId={restaurant.id} />
+        <ReservationDashboard restaurantId={restaurant.id} />
       )}
 
       {/* Logo Upload Modal */}

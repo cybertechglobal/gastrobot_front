@@ -11,8 +11,10 @@ import { fetchRestaurantIngredients } from '@/lib/api/ingredients';
 import { ProductsHeader } from '@/components/products/ProductsHeader';
 import { ProductsList } from '@/components/products/ProductsList';
 
-export default function Products() {
-  const { id: restaurantId } = useParams() as { id: string };
+export default function Products({ restaurantId }: { restaurantId: string }) {
+  const { id } = useParams() as { id: string };
+
+  const restaurantID = restaurantId || id;
 
   // Lokalno stanje za filtere
   const [filters, setFilters] = useState({
@@ -29,9 +31,9 @@ export default function Products() {
     isLoading: productsLoading,
     error: productsError,
   } = useQuery({
-    queryKey: ['products', restaurantId, { ...filters, limit }],
+    queryKey: ['products', restaurantID, { ...filters, limit }],
     queryFn: () =>
-      fetchProducts(restaurantId, {
+      fetchProducts(restaurantID, {
         params: {
           page: filters.page,
           limit,
@@ -55,9 +57,9 @@ export default function Products() {
     isLoading: ingredientsLoading,
     error: ingredientsError,
   } = useQuery({
-    queryKey: ['ingredients', restaurantId, { include: 'global' }],
+    queryKey: ['ingredients', restaurantID, { include: 'global' }],
     queryFn: () =>
-      fetchRestaurantIngredients(restaurantId, {
+      fetchRestaurantIngredients(restaurantID, {
         params: { include: 'global' },
       }),
   });
@@ -96,7 +98,7 @@ export default function Products() {
   return (
     <div className="container space-y-6">
       <ProductsHeader
-        restaurantId={restaurantId}
+        restaurantId={restaurantID}
         categories={categories || []}
         totalProducts={products?.total || 0}
         ingredients={ingredients?.data}
@@ -111,7 +113,7 @@ export default function Products() {
         total={products?.total || 0}
         currentPage={filters.page}
         onPageChange={handlePageChange}
-        restaurantId={restaurantId}
+        restaurantId={restaurantID}
         categories={categories || []}
         ingredients={ingredients?.data}
         isLoading={productsLoading || categoriesLoading || ingredientsLoading}

@@ -7,13 +7,11 @@ import { ApiError } from '@/lib/error';
 import { RestaurantSkeleton } from '@/components/restaurants/restaurant/RestaurantSkeleton';
 import { auth } from '@/auth';
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export async function generateMetadata() {
   try {
-    const { id } = await params;
+    const session = await auth();
+
+    const id = session?.user?.restaurantUsers[0]?.restaurantId ?? '';
 
     const restaurant = await fetchRestaurantById(id);
     return {

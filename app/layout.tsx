@@ -7,8 +7,8 @@ import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'Admin • Lista restorana',
-  description: 'Admin panel za upravljanje restoranima',
+  title: 'Gastrobot Panel',
+  description: 'Panel za upravljanje restoranom',
 };
 
 const dmSans = DM_Sans({

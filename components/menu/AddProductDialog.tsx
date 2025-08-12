@@ -194,13 +194,14 @@ export function AddProductDialog({
                       <CardContent className="p-3">
                         <div className="flex items-center gap-4">
                           {product.imageUrl ? (
-                            <Image
-                              src={product.imageUrl}
-                              alt={product.name}
-                              width={48}
-                              height={48}
-                              className="object-cover rounded"
-                            />
+                            <div className="w-12 h-12 relative">
+                              <Image
+                                src={product.imageUrl}
+                                alt={product.name}
+                                fill
+                                className="object-cover rounded"
+                              />
+                            </div>
                           ) : (
                             <div className="h-12 w-12 bg-gradient-to-br rounded from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center">
                               <ChefHat className="h-10 w-10 text-slate-300 dark:text-slate-600" />

@@ -1,5 +1,5 @@
 'use client';
-import React, { JSX } from 'react';
+import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,13 +28,11 @@ import {
 import { Reservation } from '@/types/reservation';
 import FilterForm from './FilterForm';
 import { useReservationManagement } from './useReservationManagement';
-import { format, isToday, isTomorrow } from 'date-fns';
-import { srLatn } from 'date-fns/locale';
 import { useSession } from 'next-auth/react';
 import { UserRole } from '@/types/user';
-import { toZonedTime } from 'date-fns-tz';
-
-type ReservationStatus = 'pending' | 'confirmed' | 'rejected';
+import { formatTime, formatTimeInParts } from '@/lib/utils/utils';
+import { getStatusBadge } from '@/lib/utils/getStatusBadge';
+import { getUrgencyIndicator } from '@/lib/utils/getUrgencyIndicator';
 
 // Skeleton component for processed reservations
 const ProcessedReservationSkeleton = () => (
@@ -83,11 +81,7 @@ const ProcessedReservationSkeleton = () => (
   </Card>
 );
 
-const UnifiedReservationDashboard = ({
-  restaurantId,
-}: {
-  restaurantId?: string;
-}) => {
+const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
   const session = useSession();
 
   const role: UserRole = session?.data?.user?.restaurantUsers[0]?.role;
@@ -110,62 +104,6 @@ const UnifiedReservationDashboard = ({
     canEdit,
   } = useReservationManagement({ role, resId: restaurantId });
 
-  // Utility functions
-  const formatTime = (date: Date): string => {
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / 60000);
-
-    if (diffInMinutes < 1) return 'Upravo sada';
-    if (diffInMinutes === 1) return 'Pre 1 minut';
-    if (diffInMinutes < 60) return `Pre ${diffInMinutes} minuta`;
-    return date.toLocaleTimeString('sr-RS', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  function formatReservationTime(utcDateString: string): {
-    dayPart: string;
-    timePart: string;
-    full: string;
-  } {
-    // Lokalna vremenska zona korisnika (iz browsera)
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-    const localDate = toZonedTime(utcDateString, timeZone);
-
-    let dayPart = format(localDate, 'd. MMMM', { locale: srLatn });
-
-    if (isToday(localDate)) {
-      dayPart = 'Danas';
-    } else if (isTomorrow(localDate)) {
-      dayPart = 'Sutra';
-    }
-
-    const timePart = format(localDate, 'HH:mm');
-
-    return { dayPart, timePart, full: `${dayPart} u ${timePart}` };
-  }
-
-  const getStatusBadge = (status: ReservationStatus): JSX.Element => {
-    const badgeMap = {
-      pending: (
-        <Badge className="bg-gray-900 text-white font-medium">Na čekanju</Badge>
-      ),
-      confirmed: (
-        <Badge className="bg-green-100 text-green-900 font-medium border border-green-300">
-          Potvrđeno
-        </Badge>
-      ),
-      rejected: (
-        <Badge variant="destructive" className="font-medium">
-          Odbijeno
-        </Badge>
-      ),
-    };
-    return badgeMap[status] || <Badge variant="outline">Nepoznato</Badge>;
-  };
-
   const getLocationIcon = (location: string) => {
     return location === 'outside' ? (
       <TreePine className="w-4 h-4 text-muted-foreground" />
@@ -176,18 +114,6 @@ const UnifiedReservationDashboard = ({
 
   const getLocationText = (location: string) => {
     return location === 'outside' ? 'Napolju' : 'Unutra';
-  };
-
-  const getUrgencyIndicator = (createdAt: string) => {
-    const minutesAgo = Math.floor(
-      (new Date().getTime() - new Date(createdAt).getTime()) / 60000
-    );
-    if (minutesAgo > 10) {
-      return (
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full"></div>
-      );
-    }
-    return null;
   };
 
   // Loading state
@@ -320,7 +246,7 @@ const UnifiedReservationDashboard = ({
 
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {pendingReservations.map((reservation: Reservation) => {
-                const { full } = formatReservationTime(
+                const { full } = formatTimeInParts(
                   reservation.reservationStart
                 );
 
@@ -499,7 +425,7 @@ const UnifiedReservationDashboard = ({
                 ))
               : // Show actual processed reservations
                 processedReservations.map((reservation: Reservation) => {
-                  const { dayPart, timePart } = formatReservationTime(
+                  const { dayPart, timePart } = formatTimeInParts(
                     reservation.reservationStart
                   );
 
@@ -677,8 +603,8 @@ const UnifiedReservationDashboard = ({
           processedReservations.length > 0 && (
             <Card className="text-center py-6">
               <CardContent>
-                <div className="w-12 h-12 mx-auto mb-2 bg-muted rounded-full flex items-center justify-center">
-                  <Check className="w-6 h-6 text-muted-foreground" />
+                <div className="w-12 h-12 mx-auto mb-2 bg-green-400 rounded-full flex items-center justify-center">
+                  <Check className="w-6 h-6 text-muted-foreground text-white" />
                 </div>
                 <p className="text-muted-foreground text-sm">
                   Sve rezervacije su obrađene
@@ -707,4 +633,4 @@ const UnifiedReservationDashboard = ({
   );
 };
 
-export default UnifiedReservationDashboard;
+export default ReservationDashboard;

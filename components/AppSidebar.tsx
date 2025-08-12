@@ -38,6 +38,7 @@ const navItems: Record<UserRole, NavItem[]> = {
   ],
   manager: [
     { title: 'Restoran', href: '/my-restaurant', icon: Coffee },
+    { title: 'Porudžbine', href: '/orders', icon: ClipboardList },
     { title: 'Rezervacije', href: '/reservations', icon: ClipboardList },
   ],
   waiter: [

@@ -4,7 +4,7 @@ import React from 'react';
 import { SidebarTrigger } from './ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { signOut, useSession } from 'next-auth/react';
-import { getUserInitials } from '@/lib/utils';
+import { getUserInitials } from '@/lib/utils/utils';
 
 const Header = () => {
   const { data: session, status } = useSession();

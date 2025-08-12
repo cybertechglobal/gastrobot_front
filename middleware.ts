@@ -22,11 +22,11 @@ type UserRole = keyof typeof ROLE_ROUTES;
 // Protected routes that require specific roles
 const ROLE_PROTECTED_ROUTES: Record<string, UserRole[]> = {
   '/restaurants': ['root'],
-  '/orders': ['waiter'],
+  '/orders': ['waiter', 'manager'],
   '/my-restaurant': ['manager'],
   '/reservations': ['manager', 'waiter'],
   '/admin': ['root'],
-  '/kitchen': ['waiter', 'manager'],
+  '/chef': ['waiter', 'manager'],
 } as const;
 
 export async function middleware(req: NextRequest) {

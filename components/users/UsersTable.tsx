@@ -37,7 +37,7 @@ import { Input } from '@/components/ui/input';
 import { deleteUser, fetchRestaurantUsers } from '@/lib/api/users';
 import { EditUserForm } from './EditUserForm';
 import { DeleteDialog } from '../DeleteDialog';
-import { getUserInitials } from '@/lib/utils';
+import { getUserInitials } from '@/lib/utils/utils';
 import { RestaurantUser } from '@/types/user';
 
 // Custom hook for debounced value
@@ -62,7 +62,7 @@ const getRoleBadgeVariant = (role: RestaurantUser['role']) => {
   switch (role) {
     case 'manager':
       return 'default';
-    case 'kitchen':
+    case 'chef':
       return 'secondary';
     case 'waiter':
       return 'outline';
@@ -77,7 +77,7 @@ const getRoleDisplayName = (role: RestaurantUser['role']) => {
   const roleNames = {
     waiter: 'Konobar',
     manager: 'Manager',
-    kitchen: 'Kuvar',
+    chef: 'Kuvar',
     admin: 'Administrator',
   };
   return roleNames[role] || role;
@@ -287,7 +287,7 @@ const UsersTable = ({ restaurantId }: { restaurantId: string }) => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {users.filter((u) => u.role === 'kitchen').length}
+                  {users.filter((u) => u.role === 'chef').length}
                 </div>
               </CardContent>
             </Card>

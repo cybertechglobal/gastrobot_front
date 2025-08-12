@@ -1,5 +1,4 @@
 // app/restaurants/page.tsx
-
 import { Suspense } from 'react';
 import MainFilters from '@/components/restaurants/MainFilters';
 import { RestaurantsListSkeleton } from '@/components/restaurants/RestaurantsListSkeleton';
@@ -12,17 +11,16 @@ export async function generateMetadata({
 }: RestaurantsPageProps): Promise<Metadata> {
   const resolvedParams = await searchParams;
 
-  // Pripremi delove za title i description
   const titleParts: string[] = ['Restorani'];
   const descriptionParts: string[] = ['Panel za upravljanje restoranima'];
 
-  // Dodaj grad u title ako je selektovan
+  // Dodaj grad u title
   if (resolvedParams.city && resolvedParams.city !== 'all') {
     titleParts.push(`u ${resolvedParams.city}`);
     descriptionParts.push(`u gradu ${resolvedParams.city}`);
   }
 
-  // Dodaj status ako je selektovan
+  // Dodaj status
   if (resolvedParams.status && resolvedParams.status !== 'all') {
     const statusText =
       resolvedParams.status === 'active'
@@ -34,7 +32,7 @@ export async function generateMetadata({
     descriptionParts.push(`sa statusom ${statusText}`);
   }
 
-  // Dodaj ime restorana ako je pretraga aktivna
+  // Dodaj ime restorana
   if (resolvedParams.name) {
     titleParts.push(`- pretraga: "${resolvedParams.name}"`);
     descriptionParts.push(
