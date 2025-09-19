@@ -1,6 +1,6 @@
 import { FetchOptions } from '@/types/global';
 import { apiRequest } from '../client';
-import { OrdersResponse } from '@/types/order';
+import { Order, OrdersResponse } from '@/types/order';
 
 export async function fetchRestaurantOrders(
   id: string,
@@ -12,6 +12,20 @@ export async function fetchRestaurantOrders(
     undefined,
     {
       ...options,
+      isProtected: true,
+    }
+  );
+}
+
+export async function fetchRestaurantOrderById(
+  id: string,
+  orderId: string
+): Promise<Order> {
+  return apiRequest<Order>(
+    `v1/restaurants/${id}/orders/${orderId}`,
+    'GET',
+    undefined,
+    {
       isProtected: true,
     }
   );

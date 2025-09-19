@@ -1,8 +1,13 @@
 import { FetchOptions } from '@/types/global';
 import { ApiError } from './error';
-import { signOut } from 'next-auth/react';
-import { redirect } from 'next/navigation';
 import { getBaseUrl } from './api';
+import { signoutWithCleanup } from './utils/cleanupUtils';
+export class SessionExpiredError extends Error {
+  constructor(message: string = 'Session expired') {
+    super(message);
+    this.name = 'SessionExpiredError';
+  }
+}
 
 export async function apiRequest<T = any>(
   endpoint: string,
@@ -118,17 +123,32 @@ export async function apiRequest<T = any>(
             console.log('Token refresh failed, signing out user...');
             if (typeof window !== 'undefined') {
               // Client-side: Sign out and redirect
-              await signOut({ redirect: false });
-              window.location.href = '/login';
-            } else {
-              // Server-side: Redirect to login
-              redirect('/login');
-            }
+              try {
+                // await signOut({
+                //   redirect: true,
+                //   callbackUrl: '/login?error=SessionExpired',
+                // });
 
-            throw new Error('Authentication failed - redirecting to login');
+                await signoutWithCleanup({
+                  redirect: true,
+                  callbackUrl: '/login?error=SessionExpired',
+                });
+              } catch (error) {
+                console.error('Error during signOut:', error);
+                window.location.href = '/login?error=SessionExpired';
+              }
+
+              throw new SessionExpiredError(
+                'Authentication failed - redirecting to login'
+              );
+            } else {
+              throw new SessionExpiredError('SERVER_SIDE_SESSION_EXPIRED');
+            }
           }
         } catch (e) {
-          console.log(e);
+          if (e instanceof SessionExpiredError) {
+            throw e;
+          }
           // If we can't parse the error body, just proceed with normal error handling
         }
       }
@@ -150,7 +170,11 @@ export async function apiRequest<T = any>(
     return dataa;
   } catch (err) {
     clearTimeout(timeoutId);
-    if (process.env.NODE_ENV !== 'production') {
+
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      !(err instanceof SessionExpiredError)
+    ) {
       console.error('API Request Error:', err);
     }
 

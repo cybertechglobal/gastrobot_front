@@ -38,6 +38,7 @@ export function MenuContent({ menu, restaurantId, menuId }: MenuContentProps) {
   const [removeMenuItemDialog, setRemoveMenuItemDialog] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
+  const [productToDelete, setProductToDelete] = useState<MenuItem | null>(null);
 
   const router = useRouter();
 
@@ -61,7 +62,7 @@ export function MenuContent({ menu, restaurantId, menuId }: MenuContentProps) {
       e.stopPropagation();
     }
     setRemoveMenuItemDialog(true);
-    setSelectedProduct(product);
+    setProductToDelete(product);
   };
 
   const onClose = () => {
@@ -278,13 +279,14 @@ export function MenuContent({ menu, restaurantId, menuId }: MenuContentProps) {
         trigger={<></>}
         open={removeMenuItemDialog}
         onOpenChange={onClose}
-        description={`Da li ste sigurni da želite da uklonite ${selectedProduct?.product?.name}? Ova radnja je nepovratna. Proizvod će takođe biti uklonjen iz svih jelovnika.`}
+        description={`Da li ste sigurni da želite da uklonite ${productToDelete?.product?.name}? Proizvod će biti uklonjen iz menu-a.`}
         successMessage="Stavka je uspešno uklonjen"
         errorMessage="Greška prilikom brisanja stavke"
         mutationOptions={{
           mutationFn: () =>
-            removeMenuItem(restaurantId, menuId, selectedProduct?.id),
+            removeMenuItem(restaurantId, menuId, productToDelete?.id),
           onSuccess: () => {
+            setProductToDelete(null);
             router.refresh();
           },
         }}

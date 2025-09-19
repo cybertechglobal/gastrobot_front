@@ -6,9 +6,60 @@ import Credentials from 'next-auth/providers/credentials';
 import { type DefaultSession } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import { UserRole } from './types/user';
+import { jwtDecode } from 'jwt-decode';
+import { getBaseUrl } from './lib/api';
+import { redirect } from 'next/navigation';
+
+interface DecodedToken {
+  exp?: number;
+  [key: string]: any;
+}
+
+async function refreshAccessToken(token: any) {
+  console.log('REFRESHING TOKEN');
+  try {
+    const response = await fetch(`${getBaseUrl()}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        refreshToken: token.refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      console.log('ISTEKO JE REFRESH TOKEN');
+
+      return {
+        ...token,
+        error: 'RefreshTokenError',
+        bearerToken: undefined,
+        bearerTokenExpires: 0,
+      };
+    }
+
+    const data = await response.json();
+    console.log('NOV TOKEN JEE: ', data.accessToken);
+    return {
+      ...token,
+      bearerToken: data.accessToken,
+      refreshToken: data.refreshToken,
+      error: undefined,
+    };
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return {
+      ...token,
+      error: 'RefreshTokenError',
+      bearerToken: undefined,
+      bearerTokenExpires: 0,
+    };
+  }
+}
 
 export enum Role {
-  rooot = 'root',
+  root = 'root',
   manager = 'manager',
   waiter = 'waiter',
 }
@@ -43,6 +94,7 @@ declare module 'next-auth' {
       lastname?: string;
       profileImageUrl?: string;
       email?: string;
+      phoneNumber?: string;
       role?: Role | string;
       isVerified?: boolean;
       bearerToken?: string;
@@ -55,7 +107,9 @@ declare module 'next-auth' {
       }[];
     } & DefaultSession['user'];
     bearerToken?: string;
+    refreshToken?: string;
     expires: string;
+    error?: string;
   }
 }
 
@@ -67,11 +121,10 @@ declare module 'next-auth/jwt' {
       firstname?: string;
       lastname?: string;
       profileImageUrl?: string;
+      phoneNumber?: string;
       email?: string;
       role?: Role | string;
       isVerified?: boolean;
-      bearerToken?: string;
-      refreshToken?: string;
 
       restaurantUsers: {
         id?: string;
@@ -79,6 +132,10 @@ declare module 'next-auth/jwt' {
         restaurantId?: string;
       }[];
     };
+    bearerToken?: string;
+    refreshToken?: string;
+    bearerTokenExpires?: number;
+    error?: string;
   }
 }
 
@@ -141,6 +198,7 @@ export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
       },
     }),
   ],
+  // IZMENA: Koristiti NEXTAUTH_SECRET umesto AUTH_SECRET
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: 'jwt',
@@ -148,6 +206,8 @@ export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
   pages: {
     signIn: '/login',
   },
+  // DODAJ: trustHost za Netlify
+  trustHost: true,
   callbacks: {
     async signIn({ user, account }) {
       // If we're using credentials, we've already verified user
@@ -171,45 +231,75 @@ export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
       return res.ok;
     },
     async jwt({ token, user, session, trigger }): Promise<JWT> {
-      console.log(session);
-      console.log('TRIGEEEEEER', trigger);
-      console.log('TRIGEEEEEER', user);
+      // console.log(session);
+      // console.log('TRIGEEEEEER', trigger);
+      // console.log('TRIGEEEEEER', user);
 
-      if (trigger === 'update' && session) {
-        console.log('UPDATING: Old token:', token.user?.bearerToken);
-        console.log('UPDATING: New token:', session?.bearerToken);
+      // if (trigger === 'update' && session) {
+      //   console.log('UPDATING: Old token:', token.user?.bearerToken);
+      //   console.log('UPDATING: New token:', session?.bearerToken);
 
-        return {
-          ...token,
-          user: {
-            ...token.user,
-            bearerToken: session?.bearerToken,
-            restaurantUsers: token.user?.restaurantUsers || [],
-          },
-        } as JWT;
+      //   return {
+      //     // ...token,
+      //     user: {
+      //       ...token.user,
+      //       bearerToken: session.bearerToken,
+      //       restaurantUsers: token.user?.restaurantUsers || [],
+      //     },
+      //   } as JWT;
+      // }
+
+      if (token?.bearerToken) {
+        const decodedToken = jwtDecode(token.bearerToken);
+        console.log('decoded ', decodedToken);
+
+        token.bearerTokenExpires = (decodedToken?.exp || 0) * 1000;
       }
 
-      if (user) {
+      if (user && !user.error) {
         const { accessToken, refreshToken, error, image, name, ...restUser } =
           user;
 
         const { emailVerified, ...filteredUser } = restUser as any;
 
-        token.user = {
-          ...filteredUser,
+        return {
+          ...token,
           bearerToken: accessToken,
           refreshToken: refreshToken,
-          restaurantUsers: filteredUser.restaurantUsers || [],
+          user: {
+            ...filteredUser,
+            restaurantUsers: filteredUser.restaurantUsers || [],
+          },
         };
       }
 
-      console.log(token);
+      console.log('ovo je TOKEN ', token);
+      // Check if token needs refresh
+      const now = Date.now();
+      const tokenExpires = token.bearerTokenExpires || 0;
 
-      return token;
+      console.log('Token expiry check:', {
+        now: new Date(now).toISOString(),
+        expires: new Date(tokenExpires).toISOString(),
+        needsRefresh: now >= tokenExpires,
+      });
+
+      // If token is still valid, return as is
+      if (now < tokenExpires) {
+        return token;
+      }
+
+      return refreshAccessToken(token);
     },
     async session({ session, token }) {
-      if (token.user) {
+      if (token.error) {
+        session.error = token.error;
+      }
+
+      if (token) {
         session.user = token.user as any;
+        session.bearerToken = token.bearerToken;
+        session.refreshToken = token.refreshToken;
       }
 
       console.log('SESIJA:AAAAA ', session, token);

@@ -1,5 +1,12 @@
 import { clsx, type ClassValue } from 'clsx';
-import { isToday, isTomorrow, format } from 'date-fns';
+import {
+  isToday,
+  isTomorrow,
+  format,
+  startOfDay,
+  endOfDay,
+  subDays,
+} from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { srLatn } from 'date-fns/locale';
 import { twMerge } from 'tailwind-merge';
@@ -50,4 +57,21 @@ export const formatTimeInParts = (
   const timePart = format(localDate, 'HH:mm');
 
   return { dayPart, timePart, full: `${dayPart} u ${timePart}` };
+};
+
+export const getTodayStartUTC = (): string => {
+  const today = new Date();
+
+  return startOfDay(today).toISOString();
+};
+
+export const getYesterdayStartUTC = (): string => {
+  const yesterday = subDays(new Date(), 1);
+  return startOfDay(yesterday).toISOString();
+};
+
+export const getTodayEndUTC = (): string => {
+  const today = new Date();
+
+  return endOfDay(today).toISOString();
 };

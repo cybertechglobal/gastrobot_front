@@ -15,7 +15,7 @@ async function CategoryData() {
 
     return <Categories categories={data} />;
   } catch (error) {
-    console.error('Error fetching menu:', error);
+    console.error('Error fetching:', error);
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">

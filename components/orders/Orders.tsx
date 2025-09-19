@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +32,8 @@ import ProcessedOrdersSkeleton from './ProcessedOrdersSkeleton';
 import { formatTime, formatTimeInParts } from '@/lib/utils/utils';
 import { getStatusBadge } from '@/lib/utils/getStatusBadge';
 import { getUrgencyIndicator } from '@/lib/utils/getUrgencyIndicator';
+import { useOrderDetail } from '@/hooks/useOrderDetail';
+import OrderDetail from './OrderDetail';
 
 const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
   const session = useSession();
@@ -55,6 +57,33 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
     refetchOrders,
     canEdit,
   } = useOrderManagement({ role, resId: restaurantId });
+
+  const {
+    selectedOrder,
+    isOpen: isOverlayOpen,
+    isLoading: isOrderLoading,
+    error: orderError,
+    openOrder,
+    closeOrder,
+  } = useOrderDetail({
+    resId: restaurantId,
+  });
+
+  const [overlayAdminNote, setOverlayAdminNote] = useState('');
+
+  const handleOverlayConfirmOrder = async () => {
+    if (selectedOrder) {
+      await handleConfirmOrder(selectedOrder.id);
+      closeOrder();
+    }
+  };
+
+  const handleOverlayRejectOrder = async () => {
+    if (selectedOrder) {
+      await handleRejectOrder(selectedOrder.id);
+      closeOrder();
+    }
+  };
 
   const countTotalSum = (items: OrderItem[]) => {
     if (!items || !items.length) return 0;
@@ -193,7 +222,8 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                 return (
                   <Card
                     key={order.id}
-                    className="relative hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                    onClick={() => openOrder(order.id)}
+                    className="cursor-pointer relative hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
                   >
                     {getUrgencyIndicator(order.createdAt)}
 
@@ -302,7 +332,10 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                     {canEdit && (
                       <CardFooter className="flex space-x-3 pt-4">
                         <Button
-                          onClick={() => handleConfirmOrder(order.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleConfirmOrder(order.id);
+                          }}
                           disabled={isUpdating}
                           className="flex-1"
                         >
@@ -310,7 +343,10 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                           Prihvati
                         </Button>
                         <Button
-                          onClick={() => handleRejectOrder(order.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRejectOrder(order.id);
+                          }}
                           disabled={isUpdating}
                           variant="destructive"
                           className="flex-1"
@@ -366,7 +402,8 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                   return (
                     <Card
                       key={order.id}
-                      className="hover:shadow-md transition-shadow"
+                      onClick={() => openOrder(order.id)}
+                      className="cursor-pointer hover:shadow-md transition-shadow"
                     >
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between mb-4">
@@ -537,6 +574,20 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
             </Card>
           )}
       </div>
+
+      <OrderDetail
+        order={selectedOrder}
+        isOpen={isOverlayOpen}
+        isLoading={isOrderLoading}
+        error={orderError}
+        onClose={closeOrder}
+        canEdit={canEdit}
+        adminNote={overlayAdminNote}
+        onAdminNoteChange={setOverlayAdminNote}
+        onConfirmOrder={handleOverlayConfirmOrder}
+        onRejectOrder={handleOverlayRejectOrder}
+        isUpdating={isUpdating}
+      />
     </div>
   );
 };

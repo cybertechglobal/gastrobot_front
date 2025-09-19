@@ -219,22 +219,16 @@ export const useOrderManagement = ({
 
   // Statistics
   const stats = useMemo(() => {
-    const totalOrders =
-      pendingOrdersFromAPI.length + processedOrdersFromAPI.length;
+    const totalOrders = pendingData?.total || 0 + processedOrdersFromAPI.length;
     return {
       totalOrders,
-      totalPending: pendingOrders.length,
+      totalPending: pendingData?.total,
       totalConfirmed: processedOrders.filter((r) => r.status === 'confirmed')
         .length,
       totalRejected: processedOrders.filter((r) => r.status === 'rejected')
         .length,
     };
-  }, [
-    pendingOrdersFromAPI,
-    processedOrdersFromAPI,
-    pendingOrders,
-    processedOrders,
-  ]);
+  }, [processedOrdersFromAPI.length, pendingData?.total, processedOrders]);
 
   return {
     // Data

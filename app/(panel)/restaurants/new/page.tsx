@@ -111,7 +111,8 @@ export default function NewRestaurantPage() {
     return [
       // Step 1: Basic info
       Boolean(watchedValues.name?.trim()) &&
-        Boolean(watchedValues.description?.trim()),
+        Boolean(watchedValues.description?.trim()) &&
+        Boolean(watchedValues.email?.trim()),
 
       // Step 2: Location - convert to boolean
       Boolean(watchedValues.location?.address?.trim()) &&
@@ -297,7 +298,7 @@ export default function NewRestaurantPage() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="name">E-mail</Label>
+        <Label htmlFor="name">E-mail *</Label>
         <Input
           id="email"
           {...methods.register('email')}
@@ -307,6 +308,11 @@ export default function NewRestaurantPage() {
               'border-red-500 focus-visible:ring-red-500'
           )}
         />
+        {methods.formState.errors.email && (
+          <p className="text-sm text-red-500">
+            {methods.formState.errors.email.message}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">

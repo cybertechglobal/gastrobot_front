@@ -135,8 +135,6 @@ const OrderFilterForm: React.FC<OrderFilterFormProps> = ({
       transformed.to = endOfDay(today).toISOString();
     }
 
-    console.log(transformed);
-
     return transformed;
   };
 

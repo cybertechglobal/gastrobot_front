@@ -1,6 +1,6 @@
 // middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { auth } from './auth';
 
 const AUTH_PAGES = ['/login', '/register'];
 const PUBLIC_PATHS = [
@@ -8,6 +8,9 @@ const PUBLIC_PATHS = [
   '/api/auth', // next-auth API
   '/_next', // Next.js internals (static files, chunks, images…)
   '/api/proxy',
+  '/manifest.json',
+  '/manifest.webmanifest',
+  '/sw.js',
 ];
 
 // Role-based route mappings
@@ -30,16 +33,46 @@ const ROLE_PROTECTED_ROUTES: Record<string, UserRole[]> = {
 } as const;
 
 export async function middleware(req: NextRequest) {
+  const token = await auth();
   const { pathname, origin, search } = req.nextUrl;
+  const hasError =
+    token?.error === 'RefreshTokenError' || token?.error === 'NoRefreshToken';
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  const userRole = token?.user?.restaurantUsers[0]?.role as UserRole;
+  const userRole = token?.user?.restaurantUsers?.[0]?.role as UserRole;
+
+  // DODAJ: Više debug informacija
+  console.log('Token exists:', !!token);
+  // console.log('User role:', userRole);
 
   // Handle root path "/" - redirect based on role or to login
   if (pathname === '/') {
-    if (token && userRole && ROLE_ROUTES[userRole]) {
+    if (token && !hasError && userRole && ROLE_ROUTES[userRole]) {
+      const urlParams = new URLSearchParams(search);
+      const redirectTo = urlParams.get('redirect');
+      const orderId = urlParams.get('orderId');
+      const reservationId = urlParams.get('reservationId');
+
+      // Ako postoji redirect parametar, koristi ga
+      if (redirectTo) {
+        return NextResponse.redirect(new URL(redirectTo, origin));
+      }
+
+      // Ili kreiraj redirect na osnovu parametara
+      if (orderId) {
+        return NextResponse.redirect(
+          new URL(`/orders?orderId=${orderId}`, origin)
+        );
+      }
+
+      if (reservationId) {
+        return NextResponse.redirect(
+          new URL(`/reservations?reservationId=${reservationId}`, origin)
+        );
+      }
+
+      // Inače koristi default rutu za ulogu
       return NextResponse.redirect(new URL(ROLE_ROUTES[userRole], origin));
-    } else if (token) {
+    } else if (token && !hasError) {
       // Fallback if role is not recognized
       return NextResponse.redirect(new URL('/restaurants', origin));
     } else {
@@ -49,7 +82,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Prevent authenticated users from accessing auth pages and verify page
-  if (token) {
+  if (token && !hasError) {
     if (AUTH_PAGES.includes(pathname)) {
       // Redirect to user's role-specific page
       const defaultRoute =
@@ -79,9 +112,23 @@ export async function middleware(req: NextRequest) {
   }
 
   // All other routes require authentication
-  if (!token) {
+  if (!token || hasError) {
+    console.log(token);
+    console.log(hasError);
+    console.log('req path ', req);
+    if (pathname === '/login') {
+      return NextResponse.next();
+    }
+
     const loginUrl = new URL('/login', origin);
     loginUrl.searchParams.set('callbackUrl', pathname + search);
+
+    if (hasError) {
+      loginUrl.searchParams.set('error', 'SessionExpired');
+    }
+
+    console.log('ulazi ovdeeeee');
+
     return NextResponse.redirect(loginUrl);
   }
 
@@ -93,6 +140,7 @@ export async function middleware(req: NextRequest) {
   if (protectedRoute && userRole) {
     const allowedRoles = ROLE_PROTECTED_ROUTES[protectedRoute];
     if (!allowedRoles.includes(userRole)) {
+      // console.log(`Role ${userRole} not allowed for ${protectedRoute}`);
       // User doesn't have permission, redirect to their default page
       const defaultRoute = ROLE_ROUTES[userRole];
       return NextResponse.redirect(new URL(defaultRoute, origin));
@@ -104,5 +152,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/:path*'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|otf|json)$|api/auth).*)',
+  ],
 };

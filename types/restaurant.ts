@@ -30,6 +30,7 @@ export interface Restaurant {
   workingHours: WorkingHours;
   description: string;
   logoUrl: string;
+  backgroundImageUrl: string;
   status: 'active' | 'inactive';
   email: string;
   phoneNumber: string;

@@ -6,6 +6,7 @@ import RestaurantProfile from '@/components/restaurants/restaurant/Profile';
 import { ApiError } from '@/lib/error';
 import { RestaurantSkeleton } from '@/components/restaurants/restaurant/RestaurantSkeleton';
 import { auth } from '@/auth';
+import React from 'react'
 
 export async function generateMetadata() {
   try {

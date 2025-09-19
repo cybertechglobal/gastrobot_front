@@ -1,6 +1,13 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -38,6 +45,8 @@ import { Ingredient } from '@/types/ingredient';
 import { Category } from '@/types/category';
 import Image from 'next/image';
 
+const toNull = <T,>(v: T | undefined | null) => (v === undefined ? null : v);
+
 const productSchema = z.object({
   name: z.string().min(1, 'Naziv proizvoda je obavezan'),
   description: z.string().optional(),
@@ -48,8 +57,12 @@ const productSchema = z.object({
       z.object({
         id: z.string().optional(), // ID za postojeće ingredijente (edit mode)
         ingredientId: z.string().min(1, 'Sastojak je obavezan'),
-        unit: z.string().min(1, 'Jedinica je obavezna'),
-        quantity: z.number().min(0.01, 'Količina mora biti veća od 0'),
+        unit: z.string().trim().min(1).optional().nullable(),
+        quantity: z
+          .number()
+          .positive('Količina mora biti veća od 0')
+          .optional()
+          .nullable(),
         _toDelete: z.boolean().optional(), // Flag za brisanje
       })
     )
@@ -65,128 +78,156 @@ interface IngredientComboBoxProps {
   restaurantId: string;
 }
 
-function IngredientComboBox({
-  ingredients,
-  value,
-  onValueChange,
-  placeholder = 'Pretražite sastojak...',
-  disabled = false,
-  restaurantId,
-}: IngredientComboBoxProps) {
-  const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-  const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
-
-  // Debounce search value
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchValue(searchValue);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchValue]);
-
-  // Query za pretragu sastojaka
-  const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: ['ingredients', restaurantId, debouncedSearchValue],
-    queryFn: () =>
-      fetchRestaurantIngredients(restaurantId, {
-        params: { name: debouncedSearchValue, include: 'global' },
-      }),
-    enabled: debouncedSearchValue.length > 0,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Kombinuj inicijalne sastojke sa rezultatima pretrage
-  const displayedIngredients = useMemo(() => {
-    if (debouncedSearchValue.length === 0) {
-      return ingredients;
-    }
-
-    if (searchResults?.data) {
-      return searchResults.data;
-    }
-
-    return [];
-  }, [ingredients, searchResults, debouncedSearchValue]);
-
-  const selectedIngredient =
-    ingredients.find((ing) => ing.id === value) ||
-    searchResults?.data?.find((ing: Ingredient) => ing.id === value);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-          disabled={disabled}
-        >
-          {selectedIngredient ? selectedIngredient.name : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
-        <Command>
-          <div className="flex items-center border-b px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <input
-              placeholder="Pretražite sastojak..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            />
-            {isSearching && (
-              <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-muted border-t-foreground" />
-            )}
-          </div>
-          <div className="max-h-60 overflow-y-auto">
-            {displayedIngredients.length === 0 ? (
-              <div className="py-6 text-center text-sm">
-                {isSearching ? 'Pretražujem...' : 'Nema pronađenih sastojaka.'}
-              </div>
-            ) : (
-              <div className="p-1">
-                {displayedIngredients.map((ingredient) => (
-                  <div
-                    key={ingredient.id}
-                    className={cn(
-                      'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
-                      value === ingredient.id &&
-                        'bg-accent text-accent-foreground'
-                    )}
-                    onClick={() => {
-                      onValueChange(ingredient.id);
-                      setOpen(false);
-                      setSearchValue('');
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        'mr-2 h-4 w-4',
-                        value === ingredient.id ? 'opacity-100' : 'opacity-0'
-                      )}
-                    />
-                    <div className="flex items-center gap-2 flex-1">
-                      <span>{ingredient.name}</span>
-                      {ingredient.restaurantId === null && (
-                        <Badge variant="secondary" className="text-xs">
-                          Globalni
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
+interface IngredientComboBoxHandle {
+  open: () => void;
+  focus: () => void;
 }
+
+const IngredientComboBox = forwardRef<
+  IngredientComboBoxHandle,
+  IngredientComboBoxProps
+>(
+  (
+    {
+      ingredients,
+      value,
+      onValueChange,
+      placeholder = 'Pretražite sastojak...',
+      disabled = false,
+      restaurantId,
+    },
+    ref
+  ) => {
+    const [open, setOpen] = useState(false);
+    const [searchValue, setSearchValue] = useState('');
+    const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
+    const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+    // Fokusiraj search input kad se dropdown otvori
+    useEffect(() => {
+      if (open) searchInputRef.current?.focus();
+    }, [open]);
+
+    useImperativeHandle(ref, () => ({
+      open: () => setOpen(true),
+      focus: () => setOpen(true), // fokus će se desiti preko useEffect-a
+    }));
+
+    // Debounce search value
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearchValue(searchValue);
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }, [searchValue]);
+
+    // Query za pretragu sastojaka
+    const { data: searchResults, isLoading: isSearching } = useQuery({
+      queryKey: ['ingredients', restaurantId, debouncedSearchValue],
+      queryFn: () =>
+        fetchRestaurantIngredients(restaurantId, {
+          params: { name: debouncedSearchValue, include: 'global' },
+        }),
+      enabled: debouncedSearchValue.length > 0,
+      staleTime: 5 * 60 * 1000,
+    });
+
+    // Kombinuj inicijalne sastojke sa rezultatima pretrage
+    const displayedIngredients = useMemo(() => {
+      if (debouncedSearchValue.length === 0) {
+        return ingredients;
+      }
+
+      if (searchResults?.data) {
+        return searchResults.data;
+      }
+
+      return [];
+    }, [ingredients, searchResults, debouncedSearchValue]);
+
+    const selectedIngredient =
+      ingredients.find((ing) => ing.id === value) ||
+      searchResults?.data?.find((ing: Ingredient) => ing.id === value);
+
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+            disabled={disabled}
+          >
+            {selectedIngredient ? selectedIngredient.name : placeholder}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <Command>
+            <div className="flex items-center border-b px-3">
+              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+              <input
+                placeholder="Pretražite sastojak..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              {isSearching && (
+                <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-muted border-t-foreground" />
+              )}
+            </div>
+            <div className="max-h-60 overflow-y-auto">
+              {displayedIngredients.length === 0 ? (
+                <div className="py-6 text-center text-sm">
+                  {isSearching
+                    ? 'Pretražujem...'
+                    : 'Nema pronađenih sastojaka.'}
+                </div>
+              ) : (
+                <div className="p-1">
+                  {displayedIngredients.map((ingredient) => (
+                    <div
+                      key={ingredient.id}
+                      className={cn(
+                        'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
+                        value === ingredient.id &&
+                          'bg-accent text-accent-foreground'
+                      )}
+                      onClick={() => {
+                        onValueChange(ingredient.id);
+                        setOpen(false);
+                        setSearchValue('');
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 h-4 w-4',
+                          value === ingredient.id ? 'opacity-100' : 'opacity-0'
+                        )}
+                      />
+                      <div className="flex items-center gap-2 flex-1">
+                        <span>{ingredient.name}</span>
+                        {ingredient.restaurantId === null && (
+                          <Badge variant="secondary" className="text-xs">
+                            Globalni
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+);
+
+IngredientComboBox.displayName = 'IngredientComboBox';
 
 interface CreateIngredientDialogProps {
   open: boolean;
@@ -231,6 +272,8 @@ export function ProductForm({
   mode,
   isTab = false,
 }: ProductFormProps) {
+  const ingredientRefs = useRef<Array<IngredientComboBoxHandle | null>>([]);
+
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
     product?.imageUrl || null
@@ -255,8 +298,8 @@ export function ProductForm({
             id: ing.id,
             ingredientId: ing.ingredient?.id,
             name: ing.ingredient?.name || 'Unknown ingredient',
-            unit: ing.unit,
-            quantity: ing.quantity,
+            unit: ing.unit ?? undefined,
+            quantity: ing.quantity ?? undefined,
           })) || [],
       };
     }
@@ -322,8 +365,8 @@ export function ProductForm({
         productId: string;
         ingredientId: string;
         data: {
-          unit: string;
-          quantity: number;
+          unit: string | null;
+          quantity: number | null;
         };
       }>
     ) => {
@@ -350,8 +393,8 @@ export function ProductForm({
         productId: string;
         ingredientId: string;
         data: {
-          unit: string;
-          quantity: number;
+          unit: string | null;
+          quantity: number | null;
         };
       }>
     ) => {
@@ -412,11 +455,12 @@ export function ProductForm({
   };
 
   const addIngredient = () => {
-    append({
-      ingredientId: '',
-      unit: '',
-      quantity: 0,
-    });
+    const newIndex = fields.length;
+    append({ ingredientId: '', unit: undefined, quantity: undefined });
+    // Sačekaj render pa otvori i fokusiraj dropdown za sastojak
+    setTimeout(() => {
+      ingredientRefs.current[newIndex]?.open();
+    }, 0);
   };
 
   const removeIngredient = (index: number) => {
@@ -477,24 +521,18 @@ export function ProductForm({
                 productId,
                 ingredientId: ing.ingredientId,
                 data: {
-                  unit: ing.unit,
-                  quantity: ing.quantity,
+                  unit: toNull(ing.unit), // string | null
+                  quantity: toNull(ing.quantity), // number | null
                 },
               });
-            } else if (
-              !ing.id &&
-              !ing._toDelete &&
-              ing.ingredientId &&
-              ing.unit &&
-              ing.quantity > 0
-            ) {
+            } else if (!ing.id && !ing._toDelete && ing.ingredientId) {
               // Novi sastojak za kreiranje
               ingredientsToCreate.push({
                 productId,
                 ingredientId: ing.ingredientId,
                 data: {
-                  unit: ing.unit,
-                  quantity: ing.quantity,
+                  unit: toNull(ing.unit), // string | null
+                  quantity: toNull(ing.quantity), // number | null
                 },
               });
             }
@@ -534,19 +572,13 @@ export function ProductForm({
         // Kreiraj sastojke za novi proizvod
         if (data.ingredients && data.ingredients.length > 0) {
           const validIngredients = data.ingredients
-            .filter(
-              (ing) =>
-                !ing._toDelete &&
-                ing.ingredientId &&
-                ing.unit &&
-                ing.quantity > 0
-            )
+            .filter((ing) => !ing._toDelete && ing.ingredientId)
             .map((ing) => ({
               productId,
               ingredientId: ing.ingredientId,
               data: {
-                unit: ing.unit,
-                quantity: ing.quantity,
+                unit: toNull(ing.unit), // string | null
+                quantity: toNull(ing.quantity), // number | null
               },
             }));
 
@@ -767,9 +799,12 @@ export function ProductForm({
                 className="grid grid-cols-12 gap-3 p-y-2 rounded-lg"
               >
                 {/* Sastojak - 6 kolona */}
-                <div className="col-span-6 space-y-1">
+                <div className="col-span-5 space-y-1">
                   <Label className="text-sm font-medium">Sastojak</Label>
                   <IngredientComboBox
+                    ref={(el: IngredientComboBoxHandle | null) => {
+                      ingredientRefs.current[index] = el;
+                    }}
                     ingredients={availableIngredients}
                     value={form.watch(`ingredients.${index}.ingredientId`)}
                     onValueChange={(value) =>
@@ -789,17 +824,30 @@ export function ProductForm({
                 </div>
 
                 {/* Količina - 2 kolone */}
-                <div className="col-span-2 space-y-1">
+                <div className="col-span-3 space-y-1">
                   <Label className="text-sm font-medium">Količina</Label>
                   <Input
                     type="number"
                     min="0"
                     step="0.01"
                     {...form.register(`ingredients.${index}.quantity`, {
-                      valueAsNumber: true,
+                      setValueAs: (v) => {
+                        if (v === '' || v === null || v === undefined)
+                          return undefined; // prazno -> undefined
+                        const n = Number(v);
+                        return Number.isFinite(n) ? n : undefined; // invalid -> undefined
+                      },
                     })}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      form.setValue(
+                        `ingredients.${index}.quantity`,
+                        raw === '' ? undefined : Number(raw),
+                        { shouldValidate: true }
+                      );
+                    }}
                     placeholder="0"
-                    className="text-center"
+                    // className="text-center"
                   />
                   {form.formState.errors.ingredients?.[index]?.quantity && (
                     <p className="text-xs text-destructive mt-1">
@@ -815,7 +863,20 @@ export function ProductForm({
                 <div className="col-span-3 space-y-1">
                   <Label className="text-sm font-medium">Jedinica</Label>
                   <Input
-                    {...form.register(`ingredients.${index}.unit`)}
+                    {...form.register(`ingredients.${index}.unit`, {
+                      setValueAs: (v: string) => {
+                        const t = (v ?? '').trim();
+                        return t.length === 0 ? undefined : t;
+                      },
+                    })}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      form.setValue(
+                        `ingredients.${index}.unit`,
+                        v.trim() === '' ? undefined : v,
+                        { shouldValidate: true }
+                      );
+                    }}
                     placeholder="kg, l, kom"
                   />
                   {form.formState.errors.ingredients?.[index]?.unit && (

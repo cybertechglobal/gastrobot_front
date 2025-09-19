@@ -17,6 +17,8 @@ import { ModeToggle } from './ModeToggle';
 import { useMutation } from '@tanstack/react-query';
 import { resendVerification } from '@/lib/api/users';
 import { Eye, Mail } from 'lucide-react';
+import { toast } from 'sonner';
+import { useSignout } from '@/hooks/useSignout';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email je obavezan').email('Invalid email format'),
@@ -47,11 +49,12 @@ export default function AuthForm() {
   const [userEmail, setUserEmail] = useState('');
 
   const resendVerificationMutation = useResendVerification();
+  const { signout } = useSignout();
 
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/restaurants';
+  const callbackUrl = searchParams.get('callbackUrl') || '';
 
   const {
     register,
@@ -61,27 +64,90 @@ export default function AuthForm() {
     resolver: zodResolver(loginSchema),
   });
 
+  // useEffect(() => {
+  //   console.log(status);
+  //   console.log(callbackUrl);
+  //   if (status !== 'authenticated') return;
+
+  //   const userRole = session?.user?.restaurantUsers?.[0]?.role as
+  //     | keyof typeof ROLE_ROUTES
+  //     | undefined;
+  //   const redirectUrl = callbackUrl || (userRole ? ROLE_ROUTES[userRole] : '');
+
+  //   // za svaki slučaj normalizuj
+  //   // if (!redirectUrl) redirectUrl = '/restaurants';
+
+  //   console.log(session);
+  //   // Ako si već na /login, skloni te sa nje
+  //   if (location.pathname === '/login') {
+  //     router.replace(redirectUrl);
+  //   }
+  // }, [status, session, callbackUrl, router]);
+
   useEffect(() => {
-    if (status === 'loading') return;
+    // Check for session expired error
+    const error = searchParams.get('error');
+    if (error === 'SessionExpired') {
+      // Proveri da li je već prikazan toast za ovu sesiju
+      const toastShown = sessionStorage.getItem('sessionExpiredToastShown');
 
-    if (session?.user) {
-      // Determine redirect URL based on user role
-      const userRole = session.user.restaurantUsers[0]
-        ?.role as keyof typeof ROLE_ROUTES;
+      if (!toastShown) {
+        // Prikaži toast samo jednom
+        toast.error('Vaša sesija je istekla. Molimo ulogujte se ponovo.', {
+          duration: 5000,
+          position: 'top-center',
+        });
 
-      let redirectUrl = '/restaurants';
-
-      if (callbackUrl) {
-        // Use callback URL if provided
-        redirectUrl = callbackUrl;
-      } else if (userRole && ROLE_ROUTES[userRole]) {
-        // Use role-based default route
-        redirectUrl = ROLE_ROUTES[userRole];
+        // Označi da je toast prikazan
+        sessionStorage.setItem('sessionExpiredToastShown', 'true');
       }
-
-      router.push(redirectUrl);
+    } else {
+      // Ako nema error parametra, očisti flag
+      sessionStorage.removeItem('sessionExpiredToastShown');
     }
-  }, [session, status, callbackUrl, router]);
+  }, [searchParams]);
+
+  useEffect(() => {
+    console.log(status);
+    console.log(callbackUrl);
+
+    // Prvo proveri da li ima error parametar i ukloni ga odmah
+    const error = searchParams.get('error');
+    if (error === 'SessionExpired') {
+      console.log('ulazi u signout');
+
+      // 1. Ukloni parametar iz URL-a
+      const params = new URLSearchParams(window.location.search);
+      params.delete('error');
+      const newUrl = `${window.location.pathname}${
+        params.toString() ? `?${params.toString()}` : ''
+      }`;
+      console.log(newUrl);
+
+      // 2. Zameni URL odmah
+      window.history.replaceState({}, '', newUrl);
+
+      // 4. Tek onda pozovi signOut
+      signout({ redirect: false });
+
+      return; // Izađi iz effect-a
+    }
+
+    if (status !== 'authenticated') return;
+
+    const userRole = session?.user?.restaurantUsers?.[0]?.role as
+      | keyof typeof ROLE_ROUTES
+      | undefined;
+
+    const redirectUrl = callbackUrl || (userRole ? ROLE_ROUTES[userRole] : '');
+
+    console.log(session);
+
+    // Ako si već na /login, skloni te sa nje
+    if (location.pathname === '/login') {
+      router.replace(redirectUrl);
+    }
+  }, [status, session, callbackUrl, router, searchParams]);
 
   const onSubmit = async (data: LoginFormData) => {
     setError('');
@@ -90,9 +156,11 @@ export default function AuthForm() {
     const result = await signIn('credentials', {
       email: data.email,
       password: data.password,
-      callbackUrl,
+      callbackUrl: callbackUrl ?? '/restaurants',
       redirect: false,
     });
+
+    console.log('REZULTAT ', result);
 
     if (!result?.ok || result?.error) {
       // Proveri da li je greška 403 (nepotvržen email)

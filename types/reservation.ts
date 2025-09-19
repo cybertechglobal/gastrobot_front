@@ -1,3 +1,4 @@
+import { Region } from './region';
 import { UserDetail } from './user';
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'rejected';
@@ -9,12 +10,12 @@ export interface Reservation {
   peopleCount: number;
   reservationStart: string;
   status: ReservationStatus;
-  area: 'inside' | 'outside';
   rejectionReason: string | null;
   confirmedMessage: string | null;
   reservationNumber: string;
   additionalInfo: string | null;
   assignedTableName: string | null;
+  region: Region;
   user: UserDetail;
 }
 

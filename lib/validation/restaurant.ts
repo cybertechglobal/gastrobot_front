@@ -5,7 +5,7 @@ export const restaurantSchema = z.object({
   name: z.string().min(2, 'Ime je obavezno'),
   description: z.string().min(1, 'Opis je obavezan'),
   logo: z.any().nullable().optional(),
-  email: z.string().email('Email nije validan').optional(),
+  email: z.string().email('Email nije validan'),
   phoneNumber: z.string().optional(),
   location: z.object({
     address: z.string().min(1, 'Adresa je obavezna'),

@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  reactStrictMode: false, // ⬅️ ovde isključiš Strict Mode
+
   images: {
     remotePatterns: [
       {

@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +34,9 @@ import { UserRole } from '@/types/user';
 import { formatTime, formatTimeInParts } from '@/lib/utils/utils';
 import { getStatusBadge } from '@/lib/utils/getStatusBadge';
 import { getUrgencyIndicator } from '@/lib/utils/getUrgencyIndicator';
+import { Region } from '@/types/region';
+import { useReservationDetail } from '@/hooks/useReservationDetails';
+import ReservationDetailOverlay from './ReservationDetail';
 
 // Skeleton component for processed reservations
 const ProcessedReservationSkeleton = () => (
@@ -104,6 +108,19 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
     canEdit,
   } = useReservationManagement({ role, resId: restaurantId });
 
+  const {
+    selectedReservation,
+    isOpen: isOverlayOpen,
+    isLoading: isReservationLoading,
+    error: reservationError,
+    openReservation,
+    closeReservation,
+  } = useReservationDetail({
+    resId: restaurantId,
+  });
+
+  const [overlayAdminNote, setOverlayAdminNote] = useState('');
+
   const getLocationIcon = (location: string) => {
     return location === 'outside' ? (
       <TreePine className="w-4 h-4 text-muted-foreground" />
@@ -112,8 +129,24 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
     );
   };
 
-  const getLocationText = (location: string) => {
-    return location === 'outside' ? 'Napolju' : 'Unutra';
+  const getLocationText = (region: Region) => {
+    // const area = region.area === 'outside' ? 'Napolju' : 'Unutra';
+
+    return `${region.title}`;
+  };
+
+  const handleOverlayConfirmReservation = async () => {
+    if (selectedReservation) {
+      await handleConfirmReservation(selectedReservation.id);
+      closeReservation();
+    }
+  };
+
+  const handleOverlayRejectReservation = async () => {
+    if (selectedReservation) {
+      await handleRejectReservation(selectedReservation.id);
+      closeReservation();
+    }
   };
 
   // Loading state
@@ -253,6 +286,7 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                 return (
                   <Card
                     key={reservation.id}
+                    onClick={() => openReservation(reservation.id)}
                     className="relative hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
                   >
                     {getUrgencyIndicator(reservation.createdAt)}
@@ -311,17 +345,19 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                             {reservation.peopleCount}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">
-                            Mesto:
-                          </span>
-                          <span className="font-medium flex items-center">
-                            {getLocationIcon(reservation.area)}
-                            <span className="ml-1">
-                              {getLocationText(reservation.area)}
+                        {reservation.region && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">
+                              Mesto:
                             </span>
-                          </span>
-                        </div>
+                            <span className="font-medium flex items-center">
+                              {getLocationIcon(reservation.region?.area)}
+                              <span className="ml-1">
+                                {getLocationText(reservation.region)}
+                              </span>
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Special Requests */}
@@ -432,7 +468,8 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                   return (
                     <Card
                       key={reservation.id}
-                      className="hover:shadow-md transition-shadow"
+                      className="hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => openReservation(reservation.id)}
                     >
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between mb-4">
@@ -501,17 +538,19 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                           </div>
 
                           {/* Location */}
-                          <div className="flex items-center space-x-3">
-                            {getLocationIcon(reservation.area)}
-                            <div>
-                              <div className="font-medium">
-                                {getLocationText(reservation.area)}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                Lokacija
+                          {reservation.region && (
+                            <div className="flex items-center space-x-3">
+                              {getLocationIcon(reservation.region?.area)}
+                              <div>
+                                <div className="font-medium">
+                                  {getLocationText(reservation.region)}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  Lokacija
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
 
                           {/* Status time */}
                           <div className="flex items-center space-x-3">
@@ -629,6 +668,20 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
             </Card>
           )}
       </div>
+
+      <ReservationDetailOverlay
+        reservation={selectedReservation}
+        isOpen={isOverlayOpen}
+        isLoading={isReservationLoading}
+        error={reservationError}
+        onClose={closeReservation}
+        canEdit={canEdit}
+        adminNote={overlayAdminNote}
+        onAdminNoteChange={setOverlayAdminNote}
+        onConfirmReservation={handleOverlayConfirmReservation}
+        onRejectReservation={handleOverlayRejectReservation}
+        isUpdating={isUpdating}
+      />
     </div>
   );
 };

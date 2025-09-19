@@ -3,16 +3,23 @@
 import React from 'react';
 import { SidebarTrigger } from './ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { getUserInitials } from '@/lib/utils/utils';
+import { NotificationBell } from './notifications/NotificationBell';
+import { useSignout } from '@/hooks/useSignout';
 
 const Header = () => {
   const { data: session, status } = useSession();
+  const { signout } = useSignout();
+
+  const handleLogout = async () => {
+    await signout({ callbackUrl: '/login' });
+  };
 
   return (
     // <header className="flex h-[68px] items-center justify-between px-4">
     <header className="sticky top-0 z-50 flex h-[68px] items-center justify-between px-4 bg-background border-b">
-    {/* <header
+      {/* <header
       style={{ position: 'fixed', zIndex: '10', width: 'calc(100% - 65px)' }}
       className="absolute top-0 z-50 flex h-[68px] items-center justify-between px-4 bg-background/95 backdrop-blur-sm border-b"
     > */}
@@ -21,16 +28,13 @@ const Header = () => {
       {status !== 'loading' ? (
         <div className=" items-center gap-2 flex">
           {session?.user ? (
-            <div
-              className="flex items-center gap-3 px-4 py-6 cursor-pointer"
-              onClick={() => signOut({ callbackUrl: '/login' })}
-            >
+            <div className="flex items-center gap-3 px-4 py-6 cursor-pointer">
               <div className="hidden sm:flex">
                 <p className="text-sm">
                   {session.user.firstname} {session.user.lastname}
                 </p>
               </div>
-              <Avatar>
+              <Avatar onClick={handleLogout}>
                 <AvatarImage
                   src={session.user.profileImageUrl}
                   alt="user image"
@@ -42,6 +46,7 @@ const Header = () => {
                   )}
                 </AvatarFallback>
               </Avatar>
+              <NotificationBell />
             </div>
           ) : null}
         </div>

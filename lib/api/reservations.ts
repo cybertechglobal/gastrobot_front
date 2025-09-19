@@ -1,6 +1,6 @@
 import { FetchOptions } from '@/types/global';
 import { apiRequest } from '../client';
-import { ReservationResponse } from '@/types/reservation';
+import { Reservation, ReservationResponse } from '@/types/reservation';
 
 export async function fetchRestaurantReservations(
   id: string,
@@ -12,6 +12,19 @@ export async function fetchRestaurantReservations(
     undefined,
     {
       ...options,
+      isProtected: true,
+    }
+  );
+}
+
+export async function fetchRestaurantReservationById(
+  reservationId: string
+): Promise<Reservation> {
+  return apiRequest<Reservation>(
+    `reservations/${reservationId}`,
+    'GET',
+    undefined,
+    {
       isProtected: true,
     }
   );

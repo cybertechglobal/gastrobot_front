@@ -7,7 +7,7 @@ import {
   rejectReservation,
 } from '@/lib/api/reservations';
 import { FilterFormData } from './FilterForm';
-import { addDays, endOfDay, format, startOfDay } from 'date-fns';
+import { addDays, endOfDay, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 import { UserRole } from '@/types/user';
 
@@ -61,8 +61,6 @@ export const useReservationManagement = ({
       params.from = filters.from;
       params.to = filters.to;
     } else {
-      const now = new Date();
-      console.log(format(now, 'O')); // npr. "GMT+1"
       const today = new Date();
       const tomorrow = addDays(today, 1);
 

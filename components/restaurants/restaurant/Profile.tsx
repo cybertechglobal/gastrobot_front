@@ -16,6 +16,8 @@ import {
   Upload,
   Trash,
   CheckSquare,
+  Table,
+  Image as ImageIcon,
 } from 'lucide-react';
 import {
   Select,
@@ -48,18 +50,21 @@ import RestaurantSettings from './RestaurantSettings';
 import ReservationDashboard from '@/components/reservations/Reservations';
 import { useSession } from 'next-auth/react';
 import { UserRole } from '@/types/user';
+import RegionsAndTables from './RegionsAndTables';
 
-interface LogoUploadModalProps {
+interface ImageUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentLogo?: string;
-  onLogoUpdate: (logoUrl: string) => void;
+  currentImage?: string;
+  onImageUpdate: (imageUrl: string) => void;
   restaurantId: string;
+  type: 'logo' | 'background';
+  title: string;
 }
 
 interface BasicInfoSectionProps {
   restaurant: Restaurant;
-  mutation: any; // You might want to type this more specifically
+  mutation: any;
   handleStatusChange: (status: 'active' | 'inactive') => void;
   status: 'active' | 'inactive';
   router: any;
@@ -80,8 +85,8 @@ interface RestaurantProfileProps {
   menus: Menu[];
 }
 
-interface LogoFormData {
-  logoFile: File;
+interface ImageFormData {
+  imageFile: File;
 }
 
 interface Section {
@@ -116,44 +121,66 @@ const DefaultLogo: React.FC = () => (
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2}
-        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h4a1 1 0 011 1v5m-6 0V9a1 1 0 011-1h4a1 1 0 011 1v13.4"
+        d="M19 21V5a2 2 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h4a1 1 0 011 1v5m-6 0V9a1 1 0 011-1h4a1 1 0 011 1v13.4"
       />
     </svg>
   </div>
 );
 
-// Logo Upload Modal Component
-const LogoUploadModal: React.FC<LogoUploadModalProps> = ({
+// Default background component
+const DefaultBackground: React.FC = () => (
+  <div className="w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
+    <ImageIcon className="w-16 h-16 text-gray-400 dark:text-gray-600" />
+  </div>
+);
+
+// Universal Image Upload Modal Component
+const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   isOpen,
   onClose,
-  currentLogo,
-  onLogoUpdate,
+  currentImage,
+  onImageUpdate,
   restaurantId,
+  type,
+  title,
 }) => {
-  const [previewLogo, setPreviewLogo] = useState<string | undefined>(
-    currentLogo
+  const [previewImage, setPreviewImage] = useState<string | undefined>(
+    currentImage
   );
   const {
     register,
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<LogoFormData>();
+  } = useForm<ImageFormData>();
 
-  const logoMutation = useMutation({
-    mutationFn: async (logoData: File) => {
+  const imageMutation = useMutation({
+    mutationFn: async (imageData: File) => {
       const formData = new FormData();
-      formData.append('logo', logoData);
+      const fieldName = type === 'logo' ? 'logo' : 'backgroundImage';
+      formData.append(fieldName, imageData);
+
       const res = await updateRestaurantLogo(restaurantId, formData);
       return res;
     },
-    onSuccess: (data: { logoUrl: string }) => {
-      onLogoUpdate(data.logoUrl);
-      toast.success('Logo je uspešno ažuriran!');
-      onClose();
+    onSuccess: (data: { logoUrl?: string; backgroundImageUrl?: string }) => {
+      const imageUrl = type === 'logo' ? data.logoUrl : data.backgroundImageUrl;
+      if (imageUrl) {
+        onImageUpdate(imageUrl);
+        toast.success(
+          `${
+            type === 'logo' ? 'Logo' : 'Pozadinska slika'
+          } je uspešno ažuriran!`
+        );
+        onClose();
+      }
     },
     onError: () => {
-      toast.error('Greška prilikom ažuriranja loga');
+      toast.error(
+        `Greška prilikom ažuriranja ${
+          type === 'logo' ? 'loga' : 'pozadinske slike'
+        }`
+      );
     },
   });
 
@@ -175,40 +202,49 @@ const LogoUploadModal: React.FC<LogoUploadModalProps> = ({
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
-        setPreviewLogo(result);
-        setValue('logoFile', file);
+        setPreviewImage(result);
+        setValue('imageFile', file);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const onSubmit = (data: LogoFormData) => {
-    logoMutation.mutate(data.logoFile);
+  const onSubmit = (data: ImageFormData) => {
+    imageMutation.mutate(data.imageFile);
   };
 
   if (!isOpen) return null;
+
+  const isLogo = type === 'logo';
+  const previewContainerClass = isLogo
+    ? 'w-24 h-24 rounded-2xl'
+    : 'w-full h-32 rounded-xl';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md mx-4">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Promena loga
+          {title}
         </h3>
 
         <div className="space-y-4">
-          {/* Preview trenutnog loga */}
+          {/* Preview trenutne slike */}
           <div className="flex justify-center mb-4">
-            <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-lg">
-              {previewLogo ? (
+            <div
+              className={`${previewContainerClass} overflow-hidden shadow-lg`}
+            >
+              {previewImage ? (
                 <Image
-                  src={previewLogo}
-                  width={96}
-                  height={96}
-                  alt="Logo preview"
+                  src={previewImage}
+                  width={isLogo ? 96 : 400}
+                  height={isLogo ? 96 : 128}
+                  alt={`${type} preview`}
                   className="w-full h-full object-cover"
                 />
-              ) : (
+              ) : isLogo ? (
                 <DefaultLogo />
+              ) : (
+                <DefaultBackground />
               )}
             </div>
           </div>
@@ -218,15 +254,15 @@ const LogoUploadModal: React.FC<LogoUploadModalProps> = ({
             <input
               type="file"
               accept="image/*"
-              {...register('logoFile', {
-                required: !previewLogo ? 'Molimo izaberite sliku' : false,
+              {...register('imageFile', {
+                required: !previewImage ? 'Molimo izaberite sliku' : false,
               })}
               onChange={handleFileSelect}
               className="hidden"
-              id="logo-upload"
+              id={`${type}-upload`}
             />
             <div
-              onClick={() => document.getElementById('logo-upload')?.click()}
+              onClick={() => document.getElementById(`${type}-upload`)?.click()}
               className="cursor-pointer flex flex-col items-center space-y-2"
             >
               <Upload className="w-8 h-8 text-gray-400 dark:text-gray-500" />
@@ -235,13 +271,15 @@ const LogoUploadModal: React.FC<LogoUploadModalProps> = ({
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-500">
                 PNG, JPG do 5MB
+                {!isLogo && <br />}
+                {!isLogo && 'Preporučuje se format 16:9 (npr. 1200x675px)'}
               </span>
             </div>
           </div>
 
-          {errors.logoFile && (
+          {errors.imageFile && (
             <p className="text-red-600 dark:text-red-400 text-sm">
-              {errors.logoFile.message}
+              {errors.imageFile.message}
             </p>
           )}
 
@@ -252,7 +290,7 @@ const LogoUploadModal: React.FC<LogoUploadModalProps> = ({
               variant="outline"
               onClick={onClose}
               className="flex-1"
-              disabled={logoMutation.isPending}
+              disabled={imageMutation.isPending}
             >
               Otkaži
             </Button>
@@ -260,9 +298,9 @@ const LogoUploadModal: React.FC<LogoUploadModalProps> = ({
               type="button"
               onClick={handleSubmit(onSubmit)}
               className="flex-1"
-              disabled={logoMutation.isPending}
+              disabled={imageMutation.isPending}
             >
-              {logoMutation.isPending ? 'Čuva se...' : 'Sačuvaj'}
+              {imageMutation.isPending ? 'Čuva se...' : 'Sačuvaj'}
             </Button>
           </div>
         </div>
@@ -391,9 +429,16 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
   const [currentView, setCurrentView] = useState<string>('overview');
   const [breadcrumb, setBreadcrumb] = useState<string[]>([restaurant.name]);
   const [isLogoModalOpen, setIsLogoModalOpen] = useState<boolean>(false);
+  const [isBackgroundModalOpen, setIsBackgroundModalOpen] =
+    useState<boolean>(false);
   const [currentLogo, setCurrentLogo] = useState<string | undefined>(
     restaurant?.logoUrl
   );
+  const [currentBackgroundImage, setCurrentBackgroundImage] = useState<
+    string | undefined
+  >(restaurant?.backgroundImageUrl);
+
+  console.log(restaurant)
 
   const { data: session } = useSession();
 
@@ -424,6 +469,10 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
 
   const handleLogoUpdate = (newLogoUrl: string) => {
     setCurrentLogo(newLogoUrl);
+  };
+
+  const handleBackgroundImageUpdate = (newbackgroundImage: string) => {
+    setCurrentBackgroundImage(newbackgroundImage);
   };
 
   const navigateTo = (view: string, title: string) => {
@@ -486,6 +535,14 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       isVisible: userRole === 'root',
     },
     {
+      id: 'regioni',
+      title: 'Stolovi i Regioni',
+      icon: <Table className="w-6 h-6" />,
+      description: 'Upravljanje stolovima i regionima',
+      color: 'from-purple-500 to-purple-600',
+      isVisible: true,
+    },
+    {
       id: 'podesavanja',
       title: 'Podešavanja',
       icon: <Settings className="w-6 h-6" />,
@@ -497,76 +554,107 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
 
   if (currentView === 'overview') {
     return (
-      <div className="container">
+      <div className="container xl:max-w-[1024px]">
         {/* Restaurant Header */}
-        <div className="bg-white dark:bg-gray-950 rounded-2xl p-8 shadow-sm mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div
-                className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-200 relative group"
-                onClick={() => setIsLogoModalOpen(true)}
-              >
-                {currentLogo && !restaurant.logoUrl?.includes('url.com') ? (
-                  <Image
-                    src={currentLogo}
-                    width={80}
-                    height={80}
-                    alt={`Logo ${restaurant.name}`}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <DefaultLogo />
-                )}
+        <div className="bg-white dark:bg-gray-950 rounded-2xl shadow-sm mb-8 overflow-hidden">
+          {/* Background Image Section */}
+          <div
+            className="h-48 relative cursor-pointer group"
+            onClick={() => setIsBackgroundModalOpen(true)}
+          >
+            {currentBackgroundImage &&
+            !restaurant.backgroundImageUrl?.includes('url.com') ? (
+              <Image
+                src={currentBackgroundImage}
+                fill
+                alt={`Pozadinska slika ${restaurant.name}`}
+                className="object-cover"
+              />
+            ) : (
+              <DefaultBackground />
+            )}
 
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                  <Camera className="w-6 h-6 text-white" />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center mb-2">
-                  {/* Status indicator circle */}
-                  <div
-                    className={`w-3 h-3 rounded-full mr-3 ${
-                      status === 'active' ? 'bg-green-500' : 'bg-red-500'
-                    }`}
-                  ></div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {restaurant.name}
-                  </h1>
-                </div>
-                <div className="flex items-center text-gray-500 dark:text-gray-400 mb-3">
-                  <MapPin className="w-5 h-5 mr-2" />
-                  {restaurant.location?.city}, {restaurant.location?.address}
-                </div>
-                <p className="text-gray-600 dark:text-gray-300">
-                  {restaurant.description}
-                </p>
+            {/* Background image hover overlay */}
+            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+              <div className="text-white text-center">
+                <Camera className="w-8 h-8 mx-auto mb-2" />
+                <span className="text-sm font-medium">
+                  Promenite pozadinsku sliku
+                </span>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              {/* Delete button */}
-              <DeleteDialog
-                trigger={
-                  <Button
-                    variant="outline"
-                    className="border-[#F97316] text-destructive hover:text-destructive-800 transition-colors"
-                  >
-                    <Trash />
-                    Obriši
-                  </Button>
-                }
-                description="Ova akcija je nepovratna. Restoran će biti trajno obrisan iz sistema."
-                successMessage="Restoran je uspešno obrisan"
-                errorMessage="Greška prilikom brisanja restorana"
-                mutationOptions={{
-                  mutationFn: () => deleteRestaurant(restaurant.id),
-                  onSuccess: () => {
-                    router.replace('/restaurants');
-                  },
-                }}
-              />
+          </div>
+
+          {/* Restaurant Info Section */}
+          <div className="p-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <div
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-200 relative group"
+                  onClick={() => setIsLogoModalOpen(true)}
+                >
+                  {currentLogo && !restaurant.logoUrl?.includes('url.com') ? (
+                    <Image
+                      src={currentLogo}
+                      width={80}
+                      height={80}
+                      alt={`Logo ${restaurant.name}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <DefaultLogo />
+                  )}
+
+                  {/* Logo hover overlay */}
+                  <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                    <Camera className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center mb-2">
+                    {/* Status indicator circle */}
+                    <div
+                      className={`w-3 h-3 rounded-full mr-3 ${
+                        status === 'active' ? 'bg-green-500' : 'bg-red-500'
+                      }`}
+                    ></div>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {restaurant.name}
+                    </h1>
+                  </div>
+                  <div className="flex items-center text-gray-500 dark:text-gray-400 mb-3">
+                    <MapPin className="w-5 h-5 mr-2" />
+                    {restaurant.location?.city}, {restaurant.location?.address}
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    {restaurant.description}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                {/* Delete button */}
+                <DeleteDialog
+                  trigger={
+                    <Button
+                      variant="outline"
+                      className="border-[#F97316] text-destructive hover:text-destructive-800 transition-colors"
+                    >
+                      <Trash />
+                      Obriši
+                    </Button>
+                  }
+                  description="Ova akcija je nepovratna. Restoran će biti trajno obrisan iz sistema."
+                  successMessage="Restoran je uspešno obrisan"
+                  errorMessage="Greška prilikom brisanja restorana"
+                  mutationOptions={{
+                    mutationFn: () => deleteRestaurant(restaurant.id),
+                    onSuccess: () => {
+                      router.replace('/restaurants');
+                    },
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -602,12 +690,25 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
         </div>
 
         {/* Logo Upload Modal */}
-        <LogoUploadModal
+        <ImageUploadModal
           isOpen={isLogoModalOpen}
           onClose={() => setIsLogoModalOpen(false)}
-          currentLogo={currentLogo}
-          onLogoUpdate={handleLogoUpdate}
+          currentImage={currentLogo}
+          onImageUpdate={handleLogoUpdate}
           restaurantId={restaurant.id}
+          type="logo"
+          title="Promena loga"
+        />
+
+        {/* Background Image Upload Modal */}
+        <ImageUploadModal
+          isOpen={isBackgroundModalOpen}
+          onClose={() => setIsBackgroundModalOpen(false)}
+          currentImage={currentBackgroundImage}
+          onImageUpdate={handleBackgroundImageUpdate}
+          restaurantId={restaurant.id}
+          type="background"
+          title="Promena pozadinske slike"
         />
       </div>
     );
@@ -656,6 +757,9 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
           {currentView === 'korisnici' && (
             <UsersSection restaurantId={restaurant.id} />
           )}
+          {currentView === 'regioni' && (
+            <RegionsAndTables restaurantId={restaurant.id} />
+          )}
           {currentView === 'podesavanja' && (
             <SettingsSection restaurantId={restaurant.id} />
           )}
@@ -665,13 +769,25 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
         <ReservationDashboard restaurantId={restaurant.id} />
       )}
 
-      {/* Logo Upload Modal */}
-      <LogoUploadModal
+      {/* Image Upload Modals */}
+      <ImageUploadModal
         isOpen={isLogoModalOpen}
         onClose={() => setIsLogoModalOpen(false)}
-        currentLogo={currentLogo}
-        onLogoUpdate={handleLogoUpdate}
+        currentImage={currentLogo}
+        onImageUpdate={handleLogoUpdate}
         restaurantId={restaurant.id}
+        type="logo"
+        title="Promena loga"
+      />
+
+      <ImageUploadModal
+        isOpen={isBackgroundModalOpen}
+        onClose={() => setIsBackgroundModalOpen(false)}
+        currentImage={currentBackgroundImage}
+        onImageUpdate={handleBackgroundImageUpdate}
+        restaurantId={restaurant.id}
+        type="background"
+        title="Promena pozadinske slike"
       />
     </div>
   );

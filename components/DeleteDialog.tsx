@@ -61,6 +61,11 @@ export function DeleteDialog({
     },
   });
 
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(true);
+  };
+
   // If external control is provided, don't render trigger
   if (open !== undefined) {
     return (
@@ -87,7 +92,7 @@ export function DeleteDialog({
   // Original behavior with trigger
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-      <div onClick={() => setIsOpen(true)}>{trigger}</div>
+      <div onClick={handleTriggerClick}>{trigger}</div>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
