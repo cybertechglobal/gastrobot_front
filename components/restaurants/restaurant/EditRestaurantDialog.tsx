@@ -8,6 +8,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerTrigger,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+} from '@/components/ui/drawer';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -32,6 +40,8 @@ import { updateRestaurant } from '@/lib/api/restaurants';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { updateLocation } from '@/lib/api/locations';
+import { DAYS_OF_WEEK } from '@/lib/utils/translations';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const workingHourSchema = z.object({
   day: z.string(),
@@ -51,7 +61,6 @@ const restaurantFormSchema = z.object({
     .or(z.literal('')),
   phoneNumber: z.string().optional(),
   workingHours: z.array(workingHourSchema),
-  // Dodajemo lokaciju fields
   address: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
@@ -61,17 +70,6 @@ const restaurantFormSchema = z.object({
 type RestaurantFormData = z.infer<typeof restaurantFormSchema>;
 type WorkingHour = z.infer<typeof workingHourSchema>;
 
-const DAYS_OF_WEEK = [
-  { day: 'Ponedeljak', key: 'monday' },
-  { day: 'Utorak', key: 'tuesday' },
-  { day: 'Sreda', key: 'wednesday' },
-  { day: 'Četvrtak', key: 'thursday' },
-  { day: 'Petak', key: 'friday' },
-  { day: 'Subota', key: 'saturday' },
-  { day: 'Nedelja', key: 'sunday' },
-];
-
-// Memoized time options generator
 const useTimeOptions = () => {
   return useMemo(() => {
     const times: string[] = [];
@@ -93,11 +91,11 @@ export function EditRestaurantDialog({
   restaurant: any;
   button: any;
 }) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const timeOptions = useTimeOptions();
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  // Funkcija za parsiranje workingHours format-a
   const parseWorkingHours = (workingHours: any) => {
     return DAYS_OF_WEEK.map(({ day, key }) => {
       const hourString = workingHours?.[key];
@@ -122,7 +120,6 @@ export function EditRestaurantDialog({
     });
   };
 
-  // Pripremi defaultne vrednosti za radno vreme
   const defaultWorkingHours = parseWorkingHours(restaurant.workingHours);
 
   const {
@@ -139,7 +136,6 @@ export function EditRestaurantDialog({
       email: restaurant.email || '',
       phoneNumber: restaurant.phoneNumber || '',
       workingHours: defaultWorkingHours,
-      // Dodajemo default vrednosti za lokaciju
       address: restaurant.location?.address || '',
       city: restaurant.location?.city || '',
       country: restaurant.location?.country || '',
@@ -156,13 +152,11 @@ export function EditRestaurantDialog({
 
   const mutation = useMutation({
     mutationFn: async (data: RestaurantFormData) => {
-      // Convert working hours to the required format
       const workingHoursFormatted = data.workingHours.reduce((acc, hour) => {
         acc[hour.dayKey] = hour.open ? `${hour.from}-${hour.to}` : 'Closed';
         return acc;
       }, {} as Record<string, string>);
 
-      // Prepare restaurant payload
       const restaurantPayload = {
         name: data.name,
         description: data.description || null,
@@ -171,7 +165,6 @@ export function EditRestaurantDialog({
         workingHours: workingHoursFormatted,
       };
 
-      // Prepare location payload
       const locationPayload = {
         address: data.address || null,
         city: data.city || null,
@@ -179,13 +172,11 @@ export function EditRestaurantDialog({
         zipCode: data.zipCode || null,
       };
 
-      // Update restaurant
       const restaurantRes = await updateRestaurant(
         restaurant.id,
         restaurantPayload
       );
 
-      // Update location if locationId exists
       if (restaurant.location?.id) {
         await updateLocation(restaurant.location.id, locationPayload);
       }
@@ -216,205 +207,236 @@ export function EditRestaurantDialog({
     update(dayIndex, { ...currentHour, [field]: value });
   };
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{button}</DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Izmena restorana</DialogTitle>
-        </DialogHeader>
+  // Zajednička forma
+  const FormContent = (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Osnovni podaci */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Osnovni podaci</h3>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
-          {/* Osnovni podaci */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Osnovni podaci</h3>
+        <div className="grid gap-3">
+          <Label htmlFor="name">Ime *</Label>
+          <Input
+            id="name"
+            {...register('name')}
+            className={errors.name ? 'border-red-500' : ''}
+          />
+          {errors.name && (
+            <p className="text-sm text-red-500">{errors.name.message}</p>
+          )}
+        </div>
 
-            <div className="grid gap-3">
-              <Label htmlFor="name">Ime *</Label>
-              <Input
-                id="name"
-                {...register('name')}
-                className={errors.name ? 'border-red-500' : ''}
-              />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
-              )}
-            </div>
+        <div className="grid gap-3">
+          <Label htmlFor="description">Opis</Label>
+          <Input id="description" {...register('description')} />
+        </div>
 
-            <div className="grid gap-3">
-              <Label htmlFor="description">Opis</Label>
-              <Input id="description" {...register('description')} />
-            </div>
+        <div className="grid gap-3">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            {...register('email')}
+            placeholder="restoran@example.com"
+            className={errors.email ? 'border-red-500' : ''}
+          />
+          {errors.email && (
+            <p className="text-sm text-red-500">{errors.email.message}</p>
+          )}
+        </div>
 
-            <div className="grid gap-3">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                {...register('email')}
-                placeholder="restoran@example.com"
-                className={errors.email ? 'border-red-500' : ''}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
-              )}
-            </div>
+        <div className="grid gap-3">
+          <Label htmlFor="phoneNumber">Broj telefona</Label>
+          <Input
+            id="phoneNumber"
+            {...register('phoneNumber')}
+            placeholder="+381 60 123 4567"
+          />
+        </div>
+      </div>
 
-            <div className="grid gap-3">
-              <Label htmlFor="phoneNumber">Broj telefona</Label>
-              <Input
-                id="phoneNumber"
-                {...register('phoneNumber')}
-                placeholder="+381 60 123 4567"
-              />
-            </div>
+      {/* Lokacija */}
+      <div className="space-y-4 pt-4 border-t">
+        <div className="flex items-center gap-2">
+          <MapPin size={20} className="text-muted-foreground" />
+          <h3 className="text-lg font-semibold">Lokacija</h3>
+        </div>
+
+        <div className="grid gap-3">
+          <Label htmlFor="address">Adresa</Label>
+          <Input
+            id="address"
+            {...register('address')}
+            placeholder="Knez Mihailova 12"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid gap-3">
+            <Label htmlFor="city">Grad</Label>
+            <Input id="city" {...register('city')} placeholder="Beograd" />
           </div>
+          <div className="grid gap-3">
+            <Label htmlFor="zipCode">Poštanski broj</Label>
+            <Input
+              id="zipCode"
+              {...register('zipCode')}
+              placeholder="11000"
+            />
+          </div>
+        </div>
 
-          {/* Lokacija */}
-          <div className="space-y-4 pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <MapPin size={20} className="text-muted-foreground" />
-              <h3 className="text-lg font-semibold">Lokacija</h3>
-            </div>
+        <div className="grid gap-3">
+          <Label htmlFor="country">Zemlja</Label>
+          <Input
+            id="country"
+            {...register('country')}
+            placeholder="Srbija"
+          />
+        </div>
+      </div>
 
-            <div className="grid gap-3">
-              <Label htmlFor="address">Adresa</Label>
-              <Input
-                id="address"
-                {...register('address')}
-                placeholder="Knez Mihailova 12"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="grid gap-3">
-                <Label htmlFor="city">Grad</Label>
-                <Input id="city" {...register('city')} placeholder="Beograd" />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="zipCode">Poštanski broj</Label>
-                <Input
-                  id="zipCode"
-                  {...register('zipCode')}
-                  placeholder="11000"
+      {/* Radno vreme */}
+      <div className="space-y-4 pt-4 border-t">
+        <div className="flex items-center gap-2">
+          <Clock size={20} className="text-muted-foreground" />
+          <h3 className="text-lg font-semibold">Radno vreme</h3>
+        </div>
+        <div className="space-y-3">
+          {fields.map((field, index) => (
+            <div
+              key={field.id}
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg border gap-2"
+            >
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={watchedWorkingHours[index]?.open}
+                  onCheckedChange={(checked) =>
+                    handleWorkingHourChange(index, 'open', checked)
+                  }
                 />
-              </div>
-            </div>
-
-            <div className="grid gap-3">
-              <Label htmlFor="country">Zemlja</Label>
-              <Input
-                id="country"
-                {...register('country')}
-                placeholder="Srbija"
-              />
-            </div>
-          </div>
-
-          {/* Radno vreme */}
-          <div className="space-y-4 pt-4 border-t">
-            {/* <Label className="text-lg font-semibold">Radno vreme</Label> */}
-            <div className="space-y-3">
-              {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg border gap-2"
+                <span
+                  className={cn(
+                    'font-medium text-sm',
+                    watchedWorkingHours[index]?.open
+                      ? 'text-foreground'
+                      : 'text-muted-foreground'
+                  )}
                 >
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={watchedWorkingHours[index]?.open}
-                      onCheckedChange={(checked) =>
-                        handleWorkingHourChange(index, 'open', checked)
-                      }
+                  {field.day}
+                </span>
+              </div>
+
+              {watchedWorkingHours[index]?.open ? (
+                <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <Clock
+                      size={14}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                     />
-                    <span
-                      className={cn(
-                        'font-medium text-sm',
-                        watchedWorkingHours[index]?.open
-                          ? 'text-foreground'
-                          : 'text-muted-foreground'
-                      )}
+                    <Select
+                      value={watchedWorkingHours[index]?.from}
+                      onValueChange={(value) =>
+                        handleWorkingHourChange(index, 'from', value)
+                      }
                     >
-                      {field.day}
-                    </span>
-                    {/* {!watchedWorkingHours[index]?.open && (
-                    
-                    )} */}
+                      <SelectTrigger className="w-28 sm:w-30 pl-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {timeOptions.map((time) => (
+                            <SelectItem key={time} value={time}>
+                              {time}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  {watchedWorkingHours[index]?.open ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="relative">
-                        <Clock
-                          size={14}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        />
-                        <Select
-                          value={watchedWorkingHours[index]?.from}
-                          onValueChange={(value) =>
-                            handleWorkingHourChange(index, 'from', value)
-                          }
-                        >
-                          <SelectTrigger className="w-28 sm:w-30 pl-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              {timeOptions.map((time) => (
-                                <SelectItem key={time} value={time}>
-                                  {time}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                  <span className="text-muted-foreground text-sm">do</span>
 
-                      <span className="text-muted-foreground text-sm">do</span>
-
-                      <div className="relative">
-                        <Clock
-                          size={14}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        />
-                        <Select
-                          value={watchedWorkingHours[index]?.to}
-                          onValueChange={(value) =>
-                            handleWorkingHourChange(index, 'to', value)
-                          }
-                        >
-                          <SelectTrigger className="w-28 sm:w-30 pl-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              {timeOptions.map((time) => (
-                                <SelectItem key={time} value={time}>
-                                  {time}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      Zatvoreno
-                    </span>
-                  )}
+                  <div className="relative">
+                    <Clock
+                      size={14}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <Select
+                      value={watchedWorkingHours[index]?.to}
+                      onValueChange={(value) =>
+                        handleWorkingHourChange(index, 'to', value)
+                      }
+                    >
+                      <SelectTrigger className="w-28 sm:w-30 pl-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {timeOptions.map((time) => (
+                            <SelectItem key={time} value={time}>
+                              {time}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              ))}
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  Zatvoreno
+                </span>
+              )}
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          <DialogFooter>
-            <Button type="submit" disabled={isSubmitting || mutation.isPending}>
-              Sačuvaj
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      {/* Submit button - samo na desktop */}
+      {isDesktop && (
+        <DialogFooter>
+          <Button type="submit" disabled={isSubmitting || mutation.isPending}>
+            Sačuvaj
+          </Button>
+        </DialogFooter>
+      )}
+    </form>
+  );
+
+  if (isDesktop) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>{button}</DialogTrigger>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Izmena restorana</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">{FormContent}</div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>{button}</DrawerTrigger>
+      <DrawerContent className="h-[96vh] max-h-[96vh]">
+        <DrawerHeader className="text-left">
+          <DrawerTitle>Izmena restorana</DrawerTitle>
+        </DrawerHeader>
+        <div className="flex-1 overflow-y-auto px-4">
+          {FormContent}
+        </div>
+        <DrawerFooter className="pt-3">
+          <Button
+            onClick={handleSubmit(onSubmit)}
+            disabled={isSubmitting || mutation.isPending}
+          >
+            Sačuvaj
+          </Button>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

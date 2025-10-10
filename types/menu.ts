@@ -1,5 +1,6 @@
 // types/menu.ts
 
+import { AddonGroup } from './addon';
 import { Product } from './product';
 
 export interface Menu {
@@ -21,6 +22,23 @@ export interface MenuItem {
   deletedAt: string | null;
   price: number;
   product: Product;
+  combo: Combobox;
+  menuItemAddons: MenuItemAddons[];
+}
+export interface Combobox {
+  id: string;
+  name: string;
+  products?: Product[];
+  imageUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface MenuItemAddons {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  addonGroup: AddonGroup;
 }
 
 /**

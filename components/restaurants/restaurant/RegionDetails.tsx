@@ -96,7 +96,6 @@ export const RegionDetails: React.FC<RegionDetailsProps> = ({
                       </div>
                       <Button
                         size="sm"
-                        className="bg-yellow-500 hover:bg-yellow-600 text-black"
                         onClick={() => {
                           onAssignTable({
                             tableId: table.id,
@@ -104,7 +103,8 @@ export const RegionDetails: React.FC<RegionDetailsProps> = ({
                           });
                         }}
                       >
-                        Dodeli
+                        <Plus />
+                        Dodaj sto
                       </Button>
                     </div>
                   ))}
@@ -207,7 +207,6 @@ export const RegionDetails: React.FC<RegionDetailsProps> = ({
                         ) : (
                           <Button
                             size="sm"
-                            className="bg-yellow-500 hover:bg-yellow-600 text-black"
                             onClick={() => {
                               onAssignUser({
                                 userId: user.user.id,
@@ -215,6 +214,7 @@ export const RegionDetails: React.FC<RegionDetailsProps> = ({
                               });
                             }}
                           >
+                            <Plus />
                             Dodeli
                           </Button>
                         )}

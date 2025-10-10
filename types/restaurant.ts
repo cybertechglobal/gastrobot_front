@@ -1,3 +1,5 @@
+import { Reviewable } from "./review";
+
 export interface WorkingHours {
   monday: string;
   tuesday: string;
@@ -35,6 +37,7 @@ export interface Restaurant {
   email: string;
   phoneNumber: string;
   location: Location;
+  reviewable: Reviewable
 }
 
 export type CreateRestaurant = {

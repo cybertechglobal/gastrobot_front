@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import React from 'react';
 import { Button } from '../ui/button';
-import { Eye, Pencil } from 'lucide-react';
+import { Eye, Edit } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { MenuDialogForm } from './MenuDialogForm';
 import { Menu } from '@/types/menu';
@@ -40,7 +40,7 @@ const MenuList = ({
               menu={menu}
               trigger={
                 <Button variant="ghost" size="icon">
-                  <Pencil size={16} />
+                  <Edit size={16} />
                 </Button>
               }
             />

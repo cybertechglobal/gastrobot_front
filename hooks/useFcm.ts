@@ -4,6 +4,7 @@ import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 import { getMessagingIfSupported } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useNotifications } from './useNotifications';
+import { UserRole } from '@/types/user';
 
 async function ensureServiceWorker() {
   if ('serviceWorker' in navigator) {
@@ -16,7 +17,12 @@ async function ensureServiceWorker() {
   return null;
 }
 
-export function useFcm(options: { auto?: boolean } = { auto: false }) {
+export function useFcm(
+  options: { auto?: boolean; role?: UserRole | null } = {
+    auto: false,
+    role: undefined,
+  }
+) {
   const [token, setToken] = useState<string | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
@@ -97,8 +103,22 @@ export function useFcm(options: { auto?: boolean } = { auto: false }) {
 
   // Automatski pokušaj na mount
   useEffect(() => {
-    if (options.auto && status === 'authenticated') requestPermissionAndToken();
-  }, [options.auto, requestPermissionAndToken, status]);
+    if (!options.role) return;
+
+    if (
+      options.auto &&
+      status === 'authenticated' &&
+      options.role !== 'root' &&
+      permission === 'granted'
+    )
+      requestPermissionAndToken();
+  }, [
+    options.role,
+    options.auto,
+    requestPermissionAndToken,
+    status,
+    permission,
+  ]);
 
   // Foreground poruke - integrisano sa notification service
   useEffect(() => {

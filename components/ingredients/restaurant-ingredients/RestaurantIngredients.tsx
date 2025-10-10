@@ -26,14 +26,11 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import {
-  deleteIngredient,
-  fetchIngredients,
-  fetchRestaurantIngredients,
-} from '@/lib/api/ingredients';
+import { deleteIngredient, fetchIngredients } from '@/lib/api/ingredients';
 import IngredientModal from '../IngredientModal';
 import { DeleteDialog } from '@/components/DeleteDialog';
 import { Ingredient } from '@/types/ingredient';
+import { useIngredientsPage } from '@/hooks/query/useIngredients';
 
 interface RestaurantIngredientsProps {
   restaurantId: string;
@@ -73,21 +70,10 @@ export default function RestaurantIngredients({
     data: restaurantData,
     isLoading: restaurantLoading,
     error: restaurantError,
-  } = useQuery({
-    queryKey: [
-      'ingredients',
-      restaurantId,
-      { restaurantPage, debouncedSearchTerm },
-    ],
-    queryFn: () =>
-      fetchRestaurantIngredients(restaurantId, {
-        params: {
-          page: restaurantPage,
-          limit: LIMIT,
-          name: debouncedSearchTerm,
-        },
-      }),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+  } = useIngredientsPage(restaurantId, {
+    page: restaurantPage,
+    limit: LIMIT,
+    name: debouncedSearchTerm,
   });
 
   // Fetch global ingredients
@@ -295,7 +281,7 @@ export default function RestaurantIngredients({
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="restaurant" className="flex items-center gap-2">
               <Package className="w-4 h-4" />

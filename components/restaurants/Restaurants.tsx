@@ -18,7 +18,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Eye, Pencil } from 'lucide-react';
+import { Eye, Edit } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -160,7 +160,7 @@ export default function Restaurants({
 
           <Table className="min-w-full rounded-[8px] overflow-hidden">
             <TableHeader>
-              <TableRow className="dark:bg-[#1C1E24] bg-[#efefef] text-slate-400">
+              <TableRow className="bg-primary/10 text-slate-400">
                 <TableHead className="px-4">Logo</TableHead>
                 <TableHead className="px-4">Ime restorana</TableHead>
                 <TableHead className="px-4">Lokacija</TableHead>
@@ -176,7 +176,7 @@ export default function Restaurants({
                 <TableRow
                   key={r.id}
                   onClick={() => handleRowClick(r.id)}
-                  className="dark:bg-[#17181E] bg-[#fdfdfd] border-b border-[#1C1E24] 
+                  className="dark:bg-[#17181E] bg-[#fdfdfd] border-b  
                            cursor-pointer transition-all duration-200 ease-in-out
                            hover:bg-gray-50 hover:dark:bg-[#1A1B21] 
                            hover:shadow-sm hover:scale-[1.01]
@@ -210,11 +210,11 @@ export default function Restaurants({
                       variant={r.status === 'active' ? 'default' : 'secondary'}
                       className={
                         r.status === 'active'
-                          ? 'bg-green-950 text-green-100'
+                          ? 'bg-primary/20 text-primary/90'
                           : ''
                       }
                     >
-                      {r.status}
+                      {r.status === 'active' ? 'Aktivan' : 'Neaktivan'}
                     </Badge>
                   </TableCell>
                   <TableCell className="dark:text-gray-200 text-gray-900 py-3 px-4 hidden md:table-cell">
@@ -248,7 +248,7 @@ export default function Restaurants({
                               className="hover:bg-gray-100 hover:dark:bg-gray-800 
                                        transition-colors duration-200"
                             >
-                              <Pencil size={16} />
+                              <Edit size={16} />
                             </Button>
                           }
                         />

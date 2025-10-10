@@ -1,5 +1,6 @@
-import { Category } from "./category";
-import { ProductIngredient } from "./ingredient";
+import { Category } from './category';
+import { ProductIngredient } from './ingredient';
+import { Reviewable } from './review';
 
 export interface Product {
   id: string;
@@ -13,6 +14,8 @@ export interface Product {
   restaurantId: string;
   category: Category;
   productIngredients?: ProductIngredient[];
+  reviewable: Reviewable;
+
   // distributor: any | null;
 }
 

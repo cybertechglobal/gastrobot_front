@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { DM_Sans } from 'next/font/google';
+import { Space_Grotesk } from 'next/font/google';
 import ReactQueryProvider from '@/components/ReactQueryProvider';
 import { SessionProvider } from 'next-auth/react';
 import { Toaster } from '@/components/ui/sonner';
@@ -18,11 +18,10 @@ export const metadata: Metadata = {
   // appleWebApp: { capable: true, statusBarStyle: 'default' },
 };
 
-const dmSans = DM_Sans({
-  subsets: ['latin'], // pick the subsets you need
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-dm-sans', // (optional) for CSS‐variable usage
-  display: 'swap', // recommended for performance/SEO
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-space-grotesk',
 });
 
 export default function RootLayout({
@@ -36,12 +35,13 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.webmanifest" />
       </head>
       <body
-        className={`${dmSans.className} flex h-screen bg-background antialiased overflow-hidden`}
+        className={`${spaceGrotesk.variable} flex h-screen bg-background antialiased overflow-hidden`}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          forcedTheme="light"
+          enableSystem={false}
+          defaultTheme="light"
           disableTransitionOnChange
         >
           <SessionProvider>

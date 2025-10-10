@@ -137,7 +137,7 @@ export const EditRegionDialog: React.FC<EditRegionDialogProps> = ({
           <div className="flex gap-2">
             <Button
               type="submit"
-              className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black"
+              className="flex-1"
               disabled={isUpdating || !isValid}
             >
               {isUpdating ? 'Ažuriranje...' : 'Ažuriraj'}

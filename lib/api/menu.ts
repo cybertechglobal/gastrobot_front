@@ -1,4 +1,4 @@
-import { Menu } from '@/types/menu';
+import { Menu, MenuItem } from '@/types/menu';
 import { apiRequest } from '../client';
 
 export async function fetchMenus(restaurantId: string): Promise<Menu[]> {
@@ -48,6 +48,19 @@ export async function deleteMenu(restaurantId: string, menuId: string) {
     {
       isProtected: true,
     }
+  );
+}
+
+export async function fetchMenuItemById(
+  restaurantId: string,
+  menuId: string,
+  menuItemId: string
+): Promise<MenuItem> {
+  return apiRequest(
+    `v1/restaurants/${restaurantId}/menus/${menuId}/menu-items/${menuItemId}`,
+    'GET',
+    undefined,
+    { isProtected: true }
   );
 }
 

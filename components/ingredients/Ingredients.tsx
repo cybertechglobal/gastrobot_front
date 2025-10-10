@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash } from 'lucide-react';
+import { Edit, Trash } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -62,7 +62,7 @@ export default function Ingredients({
 
       <Table className="min-w-full rounded-[8px] overflow-hidden">
         <TableHeader>
-          <TableRow className="dark:bg-[#1C1E24] bg-[#efefef] text-slate-400">
+          <TableRow className="bg-primary/10 text-slate-400">
             <TableHead>Ime sastojka</TableHead>
             <TableHead>Datum kreiranja</TableHead>
             <TableHead className="w-[10px]">Akcije</TableHead>
@@ -72,7 +72,7 @@ export default function Ingredients({
           {allIngredients.map((ingredient) => (
             <TableRow
               key={ingredient.id}
-              className="dark:bg-[#17181E] bg-[#fdfdfd] border-b border-[#1C1E24]"
+              className="dark:bg-[#17181E] bg-[#fdfdfd] border-b "
             >
               {/* Name */}
               <TableCell className="dark:text-gray-200 text-gray-900 py-3 px-4">
@@ -86,14 +86,14 @@ export default function Ingredients({
                 })}
               </TableCell>
 
-              <TableCell className="dark:text-gray-200 text-gray-900 py-3 px-4 w-[10px]">
+              <TableCell className="dark:text-gray-200 py-3 px-4 w-[10px]">
                 <div className="flex">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setEditingIngredient(ingredient)}
                   >
-                    <Pencil size={16} />
+                    <Edit size={16} />
                   </Button>
 
                   <DeleteDialog

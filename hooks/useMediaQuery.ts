@@ -1,29 +1,29 @@
-// hooks/useMediaQuery.ts
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-export function useMediaQuery(query: string): boolean {
+export function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Check if we're in a browser environment
-    if (typeof window === 'undefined') return;
-
+    setMounted(true);
     const media = window.matchMedia(query);
-    
-    // Set initial value
-    setMatches(media.matches);
-    
-    // Create event listener
-    const listener = (event: MediaQueryListEvent) => {
-      setMatches(event.matches);
-    };
-    
-    // Add listener
+
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+
+    const listener = (e: MediaQueryListEvent) => setMatches(e.matches);
+
+    // Moderna API
     media.addEventListener('change', listener);
-    
-    // Cleanup
+
     return () => media.removeEventListener('change', listener);
-  }, [query]);
+  }, [matches, query]);
+
+  // Sprečava hydration mismatch
+  if (!mounted) {
+    return false;
+  }
 
   return matches;
 }

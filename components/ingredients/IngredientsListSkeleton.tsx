@@ -15,10 +15,10 @@ export function IngredientsListSkeleton() {
       <Skeleton className="h-4 w-48 " />
 
       {/* Table skeleton */}
-      <div className="rounded-md border border-gray-700 bg-muted/50">
+      <div className="rounded-md border bg-muted/50">
         <Table>
           <TableHeader>
-            <TableRow className="border-gray-700">
+            <TableRow className="bg-primary/10">
               <TableHead>
                 <Skeleton className="h-4 w-24 " />
               </TableHead>
@@ -32,7 +32,7 @@ export function IngredientsListSkeleton() {
           </TableHeader>
           <TableBody>
             {Array.from({ length: 10 }).map((_, i) => (
-              <TableRow key={i} className="border-gray-700">
+              <TableRow key={i}>
                 <TableCell>
                   <Skeleton className="h-4 w-32 " />
                 </TableCell>

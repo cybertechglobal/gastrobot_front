@@ -10,7 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash } from 'lucide-react';
 import { CategoryDialogForm } from './CategoryDialogForm';
 import { DeleteDialog } from '../DeleteDialog';
 import { deleteCategory } from '@/lib/api/category';
@@ -36,7 +36,7 @@ const Categories = ({ categories }: CategoriesProps) => {
       {categories.length ? (
         <Table className="min-w-full rounded-[8px] overflow-hidden">
           <TableHeader>
-            <TableRow className="dark:bg-[#1C1E24] bg-[#efefef] text-slate-400">
+            <TableRow className="bg-primary/10 text-slate-400">
               <TableHead className="px-4">Naziv</TableHead>
               <TableHead className="px-4">Tip</TableHead>
               <TableHead className="px-4 w-[10px] text-right">Akcije</TableHead>
@@ -46,7 +46,7 @@ const Categories = ({ categories }: CategoriesProps) => {
             {categories.map((category) => (
               <TableRow
                 key={category.id}
-                className="dark:bg-[#17181E] bg-[#fdfdfd] border-b border-[#1C1E24]"
+                className="dark:bg-[#17181E] bg-[#fdfdfd] border-b "
               >
                 <TableCell className="py-3 px-4 dark:text-gray-200 text-gray-900">
                   {category.name.toUpperCase()}
@@ -79,11 +79,11 @@ const Categories = ({ categories }: CategoriesProps) => {
                     <DeleteDialog
                       trigger={
                         <Button
-                          className="text-red-400"
+                          className="text-destructive hover:text-destructive-900"
                           variant="ghost"
                           size="icon"
                         >
-                          <Trash2 size={16} />
+                          <Trash size={16} />
                         </Button>
                       }
                       description="Ova akcija je nepovratna. Kategorija će biti trajno obrisan iz sistema."

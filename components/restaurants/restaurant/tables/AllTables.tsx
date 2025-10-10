@@ -18,7 +18,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { List, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { List, MoreVertical, Edit, Trash } from 'lucide-react';
 import { Table } from '@/types/table';
 import { Region } from '@/types/region';
 import { TablesGridSkeleton } from '../RegionsSkeleton';
@@ -163,7 +163,7 @@ export const AllTablesSection: React.FC<AllTablesSectionProps> = ({
                 >
                   {/* Action Menu */}
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
+                    <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
@@ -185,7 +185,7 @@ export const AllTablesSection: React.FC<AllTablesSectionProps> = ({
                           onClick={() => handleDeleteClick(table)}
                           className="cursor-pointer text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash className="mr-2 h-4 w-4" />
                           Obriši
                         </DropdownMenuItem>
                       </DropdownMenuContent>

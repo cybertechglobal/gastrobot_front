@@ -169,7 +169,7 @@ export default function RegionsAndTables({
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3 text-gray-900 dark:text-white">
-            <MapPin className="h-8 w-8 text-yellow-500" />
+            <MapPin className="h-8 w-8 text-primary/80" />
             Stolovi i Regioni
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -210,7 +210,7 @@ export default function RegionsAndTables({
 
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium">
+              <Button className="font-medium">
                 <Plus className="h-4 w-4 mr-2" />
                 Novi Region
               </Button>
@@ -259,7 +259,7 @@ export default function RegionsAndTables({
                 </div>
                 <Button
                   onClick={handleCreateRegion}
-                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-black"
+                  className="w-full"
                   disabled={
                     mutations.createRegion.isPending || !newRegionTitle.trim()
                   }

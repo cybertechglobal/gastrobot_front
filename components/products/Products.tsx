@@ -1,22 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useParams } from 'next/navigation';
-
-import { fetchProducts } from '@/lib/api/products';
-import { fetchCategories } from '@/lib/api/category';
-import { fetchRestaurantIngredients } from '@/lib/api/ingredients';
-
 import { ProductsHeader } from '@/components/products/ProductsHeader';
 import { ProductsList } from '@/components/products/ProductsList';
+import { useProducts } from '@/hooks/query/useProducts';
+import { useGlobalIngredients } from '@/hooks/query/useIngredients';
+import { useCategories } from '@/hooks/query/useCategories';
 
 export default function Products({ restaurantId }: { restaurantId: string }) {
-  const { id } = useParams() as { id: string };
-
-  const restaurantID = restaurantId || id;
-
-  // Lokalno stanje za filtere
+  // Lokalno stanje za filtere proizvoda
   const [filters, setFilters] = useState({
     name: '',
     categoryId: '',
@@ -25,52 +17,31 @@ export default function Products({ restaurantId }: { restaurantId: string }) {
 
   const limit = 15;
 
-  // Query sa lokalnim filter stanjem
   const {
-    data: products,
+    products,
     isLoading: productsLoading,
     error: productsError,
-  } = useQuery({
-    queryKey: ['products', restaurantID, { ...filters, limit }],
-    queryFn: () =>
-      fetchProducts(restaurantID, {
-        params: {
-          page: filters.page,
-          limit,
-          name: filters.name,
-          categoryId: filters.categoryId,
-        },
-      }),
-  });
+  } = useProducts({ restaurantId, limit, filters });
 
   const {
-    data: categories,
+    categories,
     isLoading: categoriesLoading,
     error: categoriesError,
-  } = useQuery({
-    queryKey: ['categories'],
-    queryFn: fetchCategories,
-  });
+  } = useCategories();
 
   const {
     data: ingredients,
     isLoading: ingredientsLoading,
     error: ingredientsError,
-  } = useQuery({
-    queryKey: ['ingredients', restaurantID, { include: 'global' }],
-    queryFn: () =>
-      fetchRestaurantIngredients(restaurantID, {
-        params: { include: 'global' },
-      }),
-  });
+  } = useGlobalIngredients(restaurantId);
 
   // Handler funkcije za ažuriranje filtera
   const handleSearchChange = (name: string) => {
-    setFilters((prev) => ({ ...prev, name, page: 1 })); // Reset page na 1
+    setFilters((prev) => ({ ...prev, name, page: 1 }));
   };
 
   const handleCategoryChange = (categoryId: string) => {
-    setFilters((prev) => ({ ...prev, categoryId, page: 1 })); // Reset page na 1
+    setFilters((prev) => ({ ...prev, categoryId, page: 1 }));
   };
 
   const handlePageChange = (page: number) => {
@@ -80,10 +51,6 @@ export default function Products({ restaurantId }: { restaurantId: string }) {
   const clearFilters = () => {
     setFilters({ name: '', categoryId: '', page: 1 });
   };
-
-  // if (productsLoading || categoriesLoading || ingredientsLoading) {
-  //   return <ProductsSkeleton />;
-  // }
 
   if (productsError || categoriesError || ingredientsError) {
     return (
@@ -96,9 +63,9 @@ export default function Products({ restaurantId }: { restaurantId: string }) {
   }
 
   return (
-    <div className="container space-y-6">
+    <>
       <ProductsHeader
-        restaurantId={restaurantID}
+        restaurantId={restaurantId}
         categories={categories || []}
         totalProducts={products?.total || 0}
         ingredients={ingredients?.data}
@@ -113,11 +80,11 @@ export default function Products({ restaurantId }: { restaurantId: string }) {
         total={products?.total || 0}
         currentPage={filters.page}
         onPageChange={handlePageChange}
-        restaurantId={restaurantID}
+        restaurantId={restaurantId}
         categories={categories || []}
         ingredients={ingredients?.data}
         isLoading={productsLoading || categoriesLoading || ingredientsLoading}
       />
-    </div>
+    </>
   );
 }

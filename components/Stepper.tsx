@@ -44,7 +44,8 @@ export function Stepper({ steps, current, valid, onStepClick }: StepperProps) {
                     ? 'bg-green-700 text-white'
                     : isActive
                     ? 'border-2 border-dashed border-brand-teal text-brand-teal'
-                    : 'bg-slate-700 text-slate-400'
+                    : 'bg-primary/60 text-white'
+                    // : 'bg-slate-700 text-slate-400'
                 )}
               >
                 {isDone ? <Check size={16} /> : i + 1}
@@ -69,7 +70,7 @@ export function Stepper({ steps, current, valid, onStepClick }: StepperProps) {
               <div
                 className={cn(
                   'flex-1 h-[2px] mb-7 mx-2 transition-colors',
-                  i < current ? 'bg-green-700' : 'bg-slate-700'
+                  i < current ? 'bg-green-700' : 'bg-primary/60'
                 )}
               />
             )}

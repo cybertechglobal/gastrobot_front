@@ -596,6 +596,8 @@ async function handler(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
+    console.log('salje se data', data)
+
     try {
       const res = await fetch(backendUrl, {
         method,

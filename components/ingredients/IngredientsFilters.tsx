@@ -64,7 +64,7 @@ export default function IngredientsFilters({
     <>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold text-white">Lista sastojaka</h1>
+        <h1 className="text-2xl font-semibold">Lista sastojaka</h1>
         <Button onClick={() => setIsAddModalOpen(true)}>
           + Dodaj sastojak
         </Button>
@@ -81,7 +81,7 @@ export default function IngredientsFilters({
               placeholder="Pretraži po imenu"
               defaultValue={initialFilters.name}
               onChange={handleInputChange}
-              className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-blue-500"
+              className="pl-10 placeholder-gray-400 focus:ring-blue-500"
             />
           </div>
         </form>

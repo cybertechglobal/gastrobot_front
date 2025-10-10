@@ -232,7 +232,7 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-8 py-5">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="text-2xl font-bold text-primary dark:text-white">
                 {stats.totalReservations}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -240,7 +240,7 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="text-2xl font-bold text-primary dark:text-white">
                 {stats.totalPending}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -248,7 +248,7 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="text-2xl font-bold text-primary dark:text-white">
                 {stats.totalConfirmed}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -287,7 +287,7 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                   <Card
                     key={reservation.id}
                     onClick={() => openReservation(reservation.id)}
-                    className="relative hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                    className="relative cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
                   >
                     {getUrgencyIndicator(reservation.createdAt)}
 

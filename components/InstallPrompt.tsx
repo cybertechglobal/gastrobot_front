@@ -164,6 +164,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { isIOS } from '@/lib/utils/ios';
 
 const SNOOZE_KEY = 'pwa_install_snooze_until';
 const SNOOZE_MS = 2 * 24 * 60 * 60 * 1000; // 2 dana
@@ -200,7 +201,7 @@ export default function InstallPrompt() {
     // - app nije instalirana
     // - moze da se instalira (beforeinstallprompt je stigao)
     // - nije snoozovano
-    const shouldShow = !isInstalled && canInstall && !isSnoozed();
+    const shouldShow = !isIOS() && !isInstalled && canInstall && !isSnoozed();
     setVisible(shouldShow);
   }, [canInstall, isInstalled, isSnoozed]);
 

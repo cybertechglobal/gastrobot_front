@@ -1,11 +1,11 @@
 // app/restaurants/[id]/page.tsx
 'use client';
 
-import { JSX, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   MapPin,
-  Pencil,
+  Edit,
   ChevronRight,
   ArrowLeft,
   Settings,
@@ -40,7 +40,6 @@ import { DeleteDialog } from '@/components/DeleteDialog';
 import { EditRestaurantDialog } from './EditRestaurantDialog';
 import MenuList from '@/components/menu/MenuList';
 import { useRouter } from 'next/navigation';
-import Products from '@/components/products/Products';
 import { MenuDialogForm } from '@/components/menu/MenuDialogForm';
 import Users from '@/components/users/Users';
 import RestaurantIngredients from '@/components/ingredients/restaurant-ingredients/RestaurantIngredients';
@@ -51,6 +50,10 @@ import ReservationDashboard from '@/components/reservations/Reservations';
 import { useSession } from 'next-auth/react';
 import { UserRole } from '@/types/user';
 import RegionsAndTables from './RegionsAndTables';
+import Link from 'next/link';
+import StarRating from '@/components/StarRating';
+import { DAYS_OF_WEEK } from '@/lib/utils/translations';
+import AddonsProductsSection from '@/components/addons-products/AddonsProductsSection';
 
 interface ImageUploadModalProps {
   isOpen: boolean;
@@ -97,16 +100,6 @@ interface Section {
   color: string;
   isVisible: boolean;
 }
-
-const fullWeek = [
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-  'sunday',
-] as const;
 
 // Default logo component
 const DefaultLogo: React.FC = () => (
@@ -316,81 +309,118 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   status,
   role,
 }) => (
-  <div className="space-y-6">
-    <div className="flex gap-5 mb-5 items-center">
-      <h2 className="text-xl font-bold">Osnovni Podaci</h2>
+  <div className="max-w-[1200px] space-y-6">
+    {/* Header */}
+    <div className="flex items-center justify-between">
+      <h2 className="text-2xl font-semibold tracking-tight">Osnovni Podaci</h2>
       <EditRestaurantDialog
         restaurant={restaurant}
         button={
-          <Button variant="ghost" className="cursor-pointer">
-            <Pencil size={16} />
+          <Button variant="outline" size="sm" className="gap-2">
+            <Edit size={16} />
             Izmeni
           </Button>
         }
       />
     </div>
 
-    {/* Status Controls */}
+    {/* Status Badge */}
     {role === 'root' && (
-      <div className="flex items-center space-x-4 mb-6">
+      <div className="inline-block">
         <Select value={status} onValueChange={handleStatusChange}>
-          <SelectTrigger className="w-48 bg-slate-800 border border-slate-700 text-slate-200">
+          <SelectTrigger className="w-[140px] h-9 border-2">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-slate-900 text-slate-100">
+          <SelectContent>
             <SelectItem value="active">
-              <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2" />
-              Aktivan
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full" />
+                Aktivan
+              </div>
             </SelectItem>
             <SelectItem value="inactive">
-              <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-2" />
-              Neaktivan
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-red-500 rounded-full" />
+                Neaktivan
+              </div>
             </SelectItem>
           </SelectContent>
         </Select>
       </div>
     )}
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      <div className="space-y-1">
-        <Label>Ime</Label>
-        <p>{restaurant.name}</p>
+    {/* Info Grid */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Left Column */}
+      <div className="space-y-6">
+        <div className="group">
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
+            Ime
+          </Label>
+          <p className="text-base font-medium">{restaurant.name}</p>
+        </div>
+
+        <div className="group">
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
+            Lokacija
+          </Label>
+          <p className="text-base">
+            {restaurant.location?.city}, {restaurant.location?.address}
+          </p>
+        </div>
+
+        <div className="group">
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
+            Kontakt info
+          </Label>
+          <p className="text-base">{restaurant.phoneNumber || '/'}</p>
+        </div>
+
+        <div className="group">
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
+            E-mail
+          </Label>
+          <p className="text-base text-blue-600 dark:text-blue-400">
+            {restaurant.email || '/'}
+          </p>
+        </div>
       </div>
-      <div className="space-y-1">
-        <Label>Lokacija</Label>
-        <p>
-          {restaurant.location?.city}, {restaurant.location?.address}
-        </p>
-      </div>
-      <div className="space-y-1">
-        <Label>Kontakt info</Label>
-        <p>{restaurant.phoneNumber || '/'}</p>
-      </div>
-      <div className="space-y-1">
-        <Label>E-mail</Label>
-        <p>{restaurant.email || '/'}</p>
-      </div>
-      <div className="space-y-1">
-        <Label className="mb-2">Radno vreme</Label>
-        <ul className="ml-0 list-none">
-          {fullWeek.map((day) => (
-            <li key={day} className="text-sm mb-1 flex justify-between">
-              <span className="capitalize font-bold">{day}:</span>
-              <span className="text-gray-700 dark:text-primary">
-                {(restaurant.workingHours && restaurant.workingHours[day]) ||
-                  'Closed'}
-              </span>
-            </li>
-          ))}
-        </ul>
+
+      {/* Right Column - Working Hours */}
+      <div className="group">
+        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+          Radno vreme
+        </Label>
+        <div className="space-y-2">
+          {DAYS_OF_WEEK.map(({ day, key }) => {
+            const hours = restaurant.workingHours?.[key];
+            const isClosed = !hours || hours === 'Closed';
+
+            return (
+              <div
+                key={day}
+                className="flex justify-between items-center py-2 px-3 rounded-md bg-muted/50 hover:bg-muted/80 transition-colors"
+              >
+                <span className="capitalize font-medium text-sm">{day}</span>
+                <span
+                  className={`text-sm font-medium ${
+                    isClosed ? 'text-muted-foreground' : 'text-foreground'
+                  }`}
+                >
+                  {hours || 'Closed'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   </div>
 );
 
 // Products Section Component
-const ProductsSection = ({ restaurantId }: { restaurantId: string }) => (
-  <Products restaurantId={restaurantId} />
+const ProductsAddonsSection = ({ restaurantId }: { restaurantId: string }) => (
+  <AddonsProductsSection restaurantId={restaurantId} />
 );
 
 // Menu Section Component
@@ -438,7 +468,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
     string | undefined
   >(restaurant?.backgroundImageUrl);
 
-  console.log(restaurant)
+  console.log(restaurant);
 
   const { data: session } = useSession();
 
@@ -448,6 +478,42 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
   const [status, setStatus] = useState<'active' | 'inactive'>(
     restaurant.status
   );
+
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // Ukloni # iz hash-a
+    if (hash) {
+      const section = sections.find((s) => s.id === hash);
+      if (section && section.isVisible) {
+        setCurrentView(hash);
+        setBreadcrumb([restaurant.name, section.title]);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash) {
+        const section = sections.find((s) => s.id === hash);
+        if (section && section.isVisible) {
+          setCurrentView(hash);
+          setBreadcrumb([restaurant.name, section.title]);
+        }
+      } else {
+        // Ako nema hash-a, vrati se na overview
+        setCurrentView('overview');
+        setBreadcrumb([restaurant.name]);
+      }
+    };
+
+    // Slusaj promene hash-a
+    window.addEventListener('hashchange', handleHashChange);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [restaurant.name]);
 
   const mutation = useMutation({
     mutationFn: async (newStatus: 'active' | 'inactive') => {
@@ -478,11 +544,19 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
   const navigateTo = (view: string, title: string) => {
     setCurrentView(view);
     setBreadcrumb([restaurant.name, title]);
+    router.push(`#${view}`, { scroll: false });
   };
 
   const goBack = () => {
     setCurrentView('overview');
     setBreadcrumb([restaurant.name]);
+    router.push(window.location.pathname, { scroll: false });
+  };
+
+  const getNavigationUrl = () => {
+    return userRole === 'root'
+      ? `/restaurants/${restaurant.id}/reviews`
+      : `/my-restaurant/reviews`;
   };
 
   const sections: Section[] = [
@@ -491,7 +565,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       title: 'Osnovni podaci',
       icon: <Settings className="w-6 h-6" />,
       description: 'Upravljanje osnovnim informacijama o restoranu',
-      color: 'from-blue-500 to-blue-600',
+      color: 'from-primary to-primary/70',
       isVisible: true,
     },
     {
@@ -499,15 +573,15 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       title: 'Sastojci',
       icon: <Package className="w-6 h-6" />,
       description: 'Upravljanje sastojcima',
-      color: 'from-green-500 to-green-600',
+      color: 'from-primary to-primary/70',
       isVisible: true,
     },
     {
       id: 'proizvodi',
-      title: 'Proizvodi',
+      title: 'Proizvodi i Dodaci',
       icon: <Package className="w-6 h-6" />,
-      description: 'Upravljanje proizvodima i inventarom',
-      color: 'from-green-500 to-green-600',
+      description: 'Upravljanje proizvodima i dodacima za hranu',
+      color: 'from-primary to-primary/70',
       isVisible: true,
     },
     {
@@ -515,7 +589,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       title: 'Jelovnik',
       icon: <UtensilsCrossed className="w-6 h-6" />,
       description: 'Kreiranje i uređivanje jelovnika',
-      color: 'from-orange-500 to-orange-600',
+      color: 'from-primary to-primary/70',
       isVisible: true,
     },
     {
@@ -523,7 +597,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       title: 'Korisnici',
       icon: <UsersIcon className="w-6 h-6" />,
       description: 'Upravljanje korisnicima i dozvolama',
-      color: 'from-purple-500 to-purple-600',
+      color: 'from-primary to-primary/70',
       isVisible: true,
     },
     {
@@ -531,7 +605,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       title: 'Rezervacije',
       icon: <CheckSquare className="w-6 h-6" />,
       description: 'Upravljanje rezervacijama',
-      color: 'from-purple-500 to-purple-600',
+      color: 'from-primary to-primary/70',
       isVisible: userRole === 'root',
     },
     {
@@ -539,7 +613,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       title: 'Stolovi i Regioni',
       icon: <Table className="w-6 h-6" />,
       description: 'Upravljanje stolovima i regionima',
-      color: 'from-purple-500 to-purple-600',
+      color: 'from-primary to-primary/70',
       isVisible: true,
     },
     {
@@ -547,7 +621,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       title: 'Podešavanja',
       icon: <Settings className="w-6 h-6" />,
       description: 'Konfigurisanje restorana',
-      color: 'from-gray-500 to-gray-600',
+      color: 'from-primary to-primary/70',
       isVisible: true,
     },
   ];
@@ -586,11 +660,13 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
           </div>
 
           {/* Restaurant Info Section */}
-          <div className="p-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-6">
+          <div className="p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col lg:flex-row lg:justify-between gap-6">
+              {/* Left section - Logo and Info */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 flex-1">
+                {/* Logo */}
                 <div
-                  className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-200 relative group"
+                  className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-200 relative group"
                   onClick={() => setIsLogoModalOpen(true)}
                 >
                   {currentLogo && !restaurant.logoUrl?.includes('url.com') ? (
@@ -607,41 +683,59 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
 
                   {/* Logo hover overlay */}
                   <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                    <Camera className="w-6 h-6 text-white" />
+                    <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center mb-2">
+                {/* Restaurant Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center mb-2 flex-wrap gap-2">
                     {/* Status indicator circle */}
                     <div
-                      className={`w-3 h-3 rounded-full mr-3 ${
+                      className={`w-3 h-3 rounded-full flex-shrink-0 ${
                         status === 'active' ? 'bg-green-500' : 'bg-red-500'
                       }`}
                     ></div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words">
                       {restaurant.name}
                     </h1>
                   </div>
-                  <div className="flex items-center text-gray-500 dark:text-gray-400 mb-3">
-                    <MapPin className="w-5 h-5 mr-2" />
-                    {restaurant.location?.city}, {restaurant.location?.address}
+                  <div className="flex items-start text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-3">
+                    <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0 mt-0.5" />
+                    <span className="break-words">
+                      {restaurant.location?.city},{' '}
+                      {restaurant.location?.address}
+                    </span>
                   </div>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 break-words">
                     {restaurant.description}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
+
+              {/* Right section - Actions */}
+              <div className="flex sm:flex-col justify-between sm:justify-start items-center sm:items-end gap-3 sm:gap-4 pt-4 sm:pt-0 border-t sm:border-t-0 lg:border-l lg:pl-6">
+                {/* Rating Link */}
+                <Link
+                  href={getNavigationUrl()}
+                  className="duration-200 hover:scale-110 text-blue-400 flex-shrink-0"
+                >
+                  <StarRating
+                    rating={restaurant?.reviewable?.averageRating || 0}
+                    label="rating:"
+                  />
+                </Link>
+
                 {/* Delete button */}
                 <DeleteDialog
                   trigger={
                     <Button
                       variant="outline"
-                      className="border-[#F97316] text-destructive hover:text-destructive-800 transition-colors"
+                      size="sm"
+                      className="border-[#F97316] text-destructive hover:text-destructive-800 transition-colors flex-shrink-0 sm:w-auto"
                     >
-                      <Trash />
-                      Obriši
+                      <Trash className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Obriši</span>
                     </Button>
                   }
                   description="Ova akcija je nepovratna. Restoran će biti trajno obrisan iz sistema."
@@ -667,10 +761,10 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
                 <div
                   key={section.id}
                   onClick={() => navigateTo(section.id, section.title)}
-                  className="group cursor-pointer bg-white dark:bg-background rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-100 dark:border-gray-800 hover:border-transparent hover:scale-105"
+                  className="group cursor-pointer bg-white dark:bg-background rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-gray-800 hover:border-transparent hover:scale-103"
                 >
                   <div
-                    className={`w-12 h-12 bg-gradient-to-r ${section.color} dark:from-gray-900 dark:to-gray-950 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
+                    className={`w-12 h-12 bg-gradient-to-r ${section.color} dark:from-gray-900 dark:to-gray-950 rounded-xl flex items-center justify-center mb-4 group-hover:scale-106 transition-transform`}
                   >
                     <div className="text-white">{section.icon}</div>
                   </div>
@@ -734,7 +828,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
 
       {/* Section Content */}
       {currentView !== 'rezervacije' && (
-        <div className="bg-white dark:bg-gray-950 rounded-2xl p-6">
+        <div className="bg-white dark:bg-gray-950 rounded-2xl p-2 sm:p-6">
           {currentView === 'osnovni' && (
             <BasicInfoSection
               restaurant={restaurant}
@@ -746,7 +840,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
             />
           )}
           {currentView === 'proizvodi' && (
-            <ProductsSection restaurantId={restaurant.id} />
+            <ProductsAddonsSection restaurantId={restaurant.id} />
           )}
           {currentView === 'sastojci' && (
             <RestaurantIngredients restaurantId={restaurant.id} />

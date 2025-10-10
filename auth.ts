@@ -147,6 +147,14 @@ class InvalidLoginError extends CredentialsSignin {
   }
 }
 
+class UserRoleNotAllowedError extends CredentialsSignin {
+  code = 'UserRoleNotAllowed';
+  constructor(message: string) {
+    super(message);
+    this.code = message;
+  }
+}
+
 export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
   providers: [
     Credentials({
@@ -166,8 +174,14 @@ export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
 
         try {
           const response = await login(email, password);
-
           const { user, accessToken, refreshToken } = response;
+
+          const userRole = user.restaurantUsers?.[0]?.role;
+          if (userRole === 'user' || !user.restaurantUsers.length) {
+            return {
+              error: 'UserRoleNotAllowed',
+            };
+          }
 
           return {
             ...user,
@@ -212,6 +226,9 @@ export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
     async signIn({ user, account }) {
       // If we're using credentials, we've already verified user
       if (account?.provider === 'credentials' && user?.error) {
+        if (user.error === 'UserRoleNotAllowed') {
+          throw new UserRoleNotAllowedError(user.error);
+        }
         throw new InvalidLoginError(user.error);
       }
 

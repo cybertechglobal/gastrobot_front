@@ -11,7 +11,7 @@ import {
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,7 +36,6 @@ import { createProduct, updateProduct } from '@/lib/api/products';
 import {
   createProductIngredient,
   deleteProductIngredient,
-  fetchRestaurantIngredients,
   updateProductIngredient,
 } from '@/lib/api/ingredients';
 import { Badge } from '../ui/badge';
@@ -44,6 +43,14 @@ import { Product } from '@/types/product';
 import { Ingredient } from '@/types/ingredient';
 import { Category } from '@/types/category';
 import Image from 'next/image';
+import { useIngredientsSearch } from '@/hooks/query/useIngredients';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 
 const toNull = <T,>(v: T | undefined | null) => (v === undefined ? null : v);
 
@@ -123,15 +130,12 @@ const IngredientComboBox = forwardRef<
     }, [searchValue]);
 
     // Query za pretragu sastojaka
-    const { data: searchResults, isLoading: isSearching } = useQuery({
-      queryKey: ['ingredients', restaurantId, debouncedSearchValue],
-      queryFn: () =>
-        fetchRestaurantIngredients(restaurantId, {
-          params: { name: debouncedSearchValue, include: 'global' },
-        }),
-      enabled: debouncedSearchValue.length > 0,
-      staleTime: 5 * 60 * 1000,
-    });
+    const { data: searchResults, isLoading: isSearching } =
+      useIngredientsSearch(restaurantId, {
+        search: debouncedSearchValue,
+        include: 'global',
+        enabledWhen: debouncedSearchValue.length > 0,
+      });
 
     // Kombinuj inicijalne sastojke sa rezultatima pretrage
     const displayedIngredients = useMemo(() => {
@@ -151,7 +155,7 @@ const IngredientComboBox = forwardRef<
       searchResults?.data?.find((ing: Ingredient) => ing.id === value);
 
     return (
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={setOpen} modal={true}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -365,7 +369,7 @@ export function ProductForm({
         productId: string;
         ingredientId: string;
         data: {
-          unit: string | null;
+          unit?: string | null;
           quantity: number | null;
         };
       }>
@@ -521,7 +525,7 @@ export function ProductForm({
                 productId,
                 ingredientId: ing.ingredientId,
                 data: {
-                  unit: toNull(ing.unit), // string | null
+                  ...(ing.unit && { unit: ing.unit }),
                   quantity: toNull(ing.quantity), // number | null
                 },
               });
@@ -531,7 +535,7 @@ export function ProductForm({
                 productId,
                 ingredientId: ing.ingredientId,
                 data: {
-                  unit: toNull(ing.unit), // string | null
+                  ...(ing.unit && { unit: ing.unit }),
                   quantity: toNull(ing.quantity), // number | null
                 },
               });
@@ -577,7 +581,7 @@ export function ProductForm({
               productId,
               ingredientId: ing.ingredientId,
               data: {
-                unit: toNull(ing.unit), // string | null
+                ...(ing.unit && { unit: ing.unit }),
                 quantity: toNull(ing.quantity), // number | null
               },
             }));
@@ -619,9 +623,6 @@ export function ProductForm({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold">
-            {isEditMode ? 'Uredi proizvod' : 'Kreiraj novi proizvod'}
-          </h2>
           <p className="text-muted-foreground">
             {isEditMode
               ? 'Izmeni detalje proizvoda i sastojke'
@@ -650,6 +651,7 @@ export function ProductForm({
           <Popover
             open={categoryPopoverOpen}
             onOpenChange={setCategoryPopoverOpen}
+            modal={true}
           >
             <PopoverTrigger asChild>
               <Button
@@ -790,16 +792,15 @@ export function ProductForm({
           )}
 
           {fields.map((field, index) => {
-            // Ne prikazuj sastojke označene za brisanje
             if (field._toDelete) return null;
 
             return (
               <div
                 key={field.id}
-                className="grid grid-cols-12 gap-3 p-y-2 rounded-lg"
+                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3 md:p-2 rounded-lg border md:border-0"
               >
-                {/* Sastojak - 6 kolona */}
-                <div className="col-span-5 space-y-1">
+                {/* Sastojak - na mobilnom full width, na desktop 5 kolona */}
+                <div className="md:col-span-5 space-y-1">
                   <Label className="text-sm font-medium">Sastojak</Label>
                   <IngredientComboBox
                     ref={(el: IngredientComboBoxHandle | null) => {
@@ -823,71 +824,77 @@ export function ProductForm({
                   )}
                 </div>
 
-                {/* Količina - 2 kolone */}
-                <div className="col-span-3 space-y-1">
-                  <Label className="text-sm font-medium">Količina</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    {...form.register(`ingredients.${index}.quantity`, {
-                      setValueAs: (v) => {
-                        if (v === '' || v === null || v === undefined)
-                          return undefined; // prazno -> undefined
-                        const n = Number(v);
-                        return Number.isFinite(n) ? n : undefined; // invalid -> undefined
-                      },
-                    })}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      form.setValue(
-                        `ingredients.${index}.quantity`,
-                        raw === '' ? undefined : Number(raw),
-                        { shouldValidate: true }
-                      );
-                    }}
-                    placeholder="0"
-                    // className="text-center"
-                  />
-                  {form.formState.errors.ingredients?.[index]?.quantity && (
-                    <p className="text-xs text-destructive mt-1">
-                      {
-                        form.formState.errors.ingredients[index].quantity
-                          .message
-                      }
-                    </p>
-                  )}
+                {/* Količina i Jedinica - na mobilnom u redu, na desktop zasebno */}
+                <div className="grid grid-cols-2 gap-3 md:col-span-6 md:grid-cols-6">
+                  {/* Količina */}
+                  <div className="md:col-span-3 space-y-1">
+                    <Label className="text-sm font-medium">Količina</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      {...form.register(`ingredients.${index}.quantity`, {
+                        setValueAs: (v) => {
+                          if (v === '' || v === null || v === undefined)
+                            return undefined;
+                          const n = Number(v);
+                          return Number.isFinite(n) ? n : undefined;
+                        },
+                      })}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        form.setValue(
+                          `ingredients.${index}.quantity`,
+                          raw === '' ? undefined : Number(raw),
+                          { shouldValidate: true }
+                        );
+                      }}
+                      placeholder="0"
+                    />
+                    {form.formState.errors.ingredients?.[index]?.quantity && (
+                      <p className="text-xs text-destructive mt-1">
+                        {
+                          form.formState.errors.ingredients[index].quantity
+                            .message
+                        }
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Jedinica */}
+                  <div className="md:col-span-3 space-y-1">
+                    <Label className="text-sm font-medium">Jedinica</Label>
+                    <Select
+                      value={form.watch(`ingredients.${index}.unit`) || 'none'}
+                      onValueChange={(value) => {
+                        form.setValue(
+                          `ingredients.${index}.unit`,
+                          value === 'none' ? undefined : value,
+                          { shouldValidate: true }
+                        );
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Izaberi jedinicu" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Bez jedinice</SelectItem>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="g">gram</SelectItem>
+                        <SelectItem value="l">litra</SelectItem>
+                        <SelectItem value="kom">komada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {form.formState.errors.ingredients?.[index]?.unit && (
+                      <p className="text-xs text-destructive mt-1">
+                        {form.formState.errors.ingredients[index].unit.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Jedinica - 3 kolone */}
-                <div className="col-span-3 space-y-1">
-                  <Label className="text-sm font-medium">Jedinica</Label>
-                  <Input
-                    {...form.register(`ingredients.${index}.unit`, {
-                      setValueAs: (v: string) => {
-                        const t = (v ?? '').trim();
-                        return t.length === 0 ? undefined : t;
-                      },
-                    })}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      form.setValue(
-                        `ingredients.${index}.unit`,
-                        v.trim() === '' ? undefined : v,
-                        { shouldValidate: true }
-                      );
-                    }}
-                    placeholder="kg, l, kom"
-                  />
-                  {form.formState.errors.ingredients?.[index]?.unit && (
-                    <p className="text-xs text-destructive mt-1">
-                      {form.formState.errors.ingredients[index].unit.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Ukloni button - 1 kolona */}
-                <div className="col-span-1 flex items-end">
+                {/* Ukloni button - na mobilnom full width, na desktop 1 kolona */}
+                <div className="md:col-span-1 md:flex md:items-end">
                   <Button
                     type="button"
                     variant="destructive"
@@ -895,7 +902,8 @@ export function ProductForm({
                     onClick={() => removeIngredient(index)}
                     className="w-full"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4 md:mx-auto" />
+                    <span className="md:hidden ml-2">Ukloni</span>
                   </Button>
                 </div>
               </div>

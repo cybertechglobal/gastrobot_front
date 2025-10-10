@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import * as z from 'zod';
 import {
   Dialog,
@@ -20,18 +20,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Search, Loader2, ChefHat } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProductForm } from '../products/ProductForm';
-import { fetchProducts } from '@/lib/api/products';
 import { createMenuItem } from '@/lib/api/menu';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
-import { fetchCategories } from '@/lib/api/category';
-import { fetchRestaurantIngredients } from '@/lib/api/ingredients';
 import { Category } from '@/types/category';
 import Image from 'next/image';
+import { assignAddonGroupToMenuItem } from '@/lib/api/addon';
+import { AddonGroupSelector } from '../addons/AddonGroupSelector';
+import { useProducts } from '@/hooks/query/useProducts';
+import { useGlobalIngredients } from '@/hooks/query/useIngredients';
+import { useCategories } from '@/hooks/query/useCategories';
 
 const existingItemSchema = z.object({
   itemId: z.string().min(1, 'Molimo izaberite stavku'),
   price: z.string().min(1, 'Cena je obavezna'),
+  addonGroupIds: z.array(z.string()).optional(),
 });
 
 interface AddProductDialogProps {
@@ -51,58 +54,42 @@ export function AddProductDialog({
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebounce(searchInput, 600);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedAddonGroupIds, setSelectedAddonGroupIds] = useState<string[]>(
+    []
+  );
 
   const router = useRouter();
 
-  // TanStack Query za fetchovanje produkata
   const {
-    data: productsResponse,
+    products: productsResponse,
     isLoading: isLoadingProducts,
     error: productsError,
-  } = useQuery({
-    queryKey: [
-      'products',
-      restaurantId,
-      {
-        name: debouncedSearch,
-        ...(preselectedCategory && { categoryId: preselectedCategory.id }),
-      },
-    ],
-    queryFn: () =>
-      fetchProducts(restaurantId, {
-        params: {
-          name: debouncedSearch,
-          ...(preselectedCategory && { categoryId: preselectedCategory.id }),
-        },
-      }),
+  } = useProducts({
+    restaurantId,
+    filters: {
+      name: debouncedSearch,
+      categoryId: preselectedCategory?.id,
+    },
     enabled: dialogOpen && activeTab === 'existing',
   });
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: fetchCategories,
-  });
+  const { categories } = useCategories();
 
-  const { data: ingredients } = useQuery({
-    queryKey: ['ingredients', restaurantId, { include: 'global' }],
-    queryFn: () =>
-      fetchRestaurantIngredients(restaurantId, {
-        params: { include: 'global' },
-      }),
-  });
+  const { data: ingredients } = useGlobalIngredients(restaurantId);
 
   const existingForm = useForm<z.infer<typeof existingItemSchema>>({
     resolver: zodResolver(existingItemSchema),
     defaultValues: {
       itemId: '',
       price: '',
+      addonGroupIds: [],
     },
   });
 
   const products = productsResponse?.data || [];
 
   const createMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       restaurantId,
       menuId,
       data,
@@ -110,11 +97,31 @@ export function AddProductDialog({
       restaurantId: string;
       menuId: string;
       data: any;
-    }) => createMenuItem(restaurantId, menuId, data),
+    }) => {
+      // Prvo kreiraj menu item
+      const menuItem = await createMenuItem(restaurantId, menuId, {
+        productId: data.productId,
+        price: data.price,
+      });
+
+      // Zatim dodeli addon grupe ako postoje
+      if (data.addonGroupIds && data.addonGroupIds.length > 0) {
+        await Promise.all(
+          data.addonGroupIds.map((addonGroupId: string, index: number) =>
+            assignAddonGroupToMenuItem(addonGroupId, menuItem.id, {
+              displayOrder: index,
+            })
+          )
+        );
+      }
+
+      return menuItem;
+    },
     onSuccess: () => {
       toast.success('Stavka je uspešno dodata u menu!');
       setDialogOpen(false);
-
+      setSelectedAddonGroupIds([]);
+      existingForm.reset();
       router.refresh();
     },
     onError: (error: Error) => {
@@ -127,7 +134,11 @@ export function AddProductDialog({
     createMutation.mutate({
       restaurantId,
       menuId,
-      data: { productId: data.itemId, price: parseFloat(data.price) },
+      data: {
+        productId: data.itemId,
+        price: parseFloat(data.price),
+        addonGroupIds: selectedAddonGroupIds,
+      },
     });
   };
 
@@ -156,10 +167,7 @@ export function AddProductDialog({
               />
             </div>
 
-            <form
-              onSubmit={existingForm.handleSubmit(onExistingSubmit)}
-              className="space-y-4"
-            >
+            <div className="space-y-4">
               <div className="grid gap-1 max-h-60 overflow-y-auto">
                 {isLoadingProducts ? (
                   <div className="flex items-center justify-center py-8">
@@ -241,6 +249,13 @@ export function AddProductDialog({
                 )}
               </div>
 
+              <AddonGroupSelector
+                restaurantId={restaurantId}
+                selectedAddonGroupIds={selectedAddonGroupIds}
+                onSelectionChange={setSelectedAddonGroupIds}
+                disabled={createMutation.isPending}
+              />
+
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -251,14 +266,15 @@ export function AddProductDialog({
                   Otkaži
                 </Button>
                 <Button
-                  type="submit"
+                  type="button"
+                  onClick={existingForm.handleSubmit(onExistingSubmit)}
                   disabled={createMutation.isPending}
                   className="flex-1"
                 >
                   {createMutation.isPending ? 'Dodavanje...' : 'Dodaj u meni'}
                 </Button>
               </div>
-            </form>
+            </div>
           </TabsContent>
 
           <TabsContent value="create" className="space-y-4">

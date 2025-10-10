@@ -22,7 +22,7 @@ import {
 import {
   MoreHorizontal,
   Edit,
-  Trash2,
+  Trash,
   Package,
   ChefHat,
   Star,
@@ -36,6 +36,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CreateProductDialog } from './CreateProductDialog';
 import { ProductsSkeleton } from './ProductsSkeleton';
 import { Product } from '@/types/product';
+import StarRating from '../StarRating';
+import { ReviewsPopupTrigger } from '../reviews/ReviewsPopupTrigger';
 
 interface ProductsListProps {
   products: Product[];
@@ -89,6 +91,11 @@ export function ProductsList({
 
   const handlePageClick = (page: number) => {
     onPageChange(page);
+  };
+
+  const handleEditProductChange = (state: boolean) => {
+    setEditProductOpen(state);
+    if (!state) setSelectedProduct(null);
   };
 
   if (isLoading) {
@@ -153,7 +160,7 @@ export function ProductsList({
         {products.map((product) => (
           <Card
             key={product.id}
-            className="group p-0 overflow-hidden border-0 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+            className="group p-0 overflow-hidden border-0 shadow-sm hover:shadow-xl transition-all duration-300"
           >
             <CardContent className="p-0">
               <div className="flex flex-col lg:flex-row">
@@ -211,6 +218,20 @@ export function ProductsList({
                           <span>
                             Azurirano: {formatDate(product.updatedAt)}
                           </span>
+
+                          <ReviewsPopupTrigger
+                            entityId={product.id}
+                            entityType="product"
+                            restaurantId={restaurantId}
+                            averageRating={
+                              product?.reviewable?.averageRating || 0
+                            }
+                          >
+                            <StarRating
+                              rating={product?.reviewable?.averageRating || 0}
+                              showLabel={false}
+                            />
+                          </ReviewsPopupTrigger>
                         </div>
                       </div>
 
@@ -250,19 +271,22 @@ export function ProductsList({
                     </div>
 
                     {/* Actions Menu */}
-                    <DropdownMenu>
+                    <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity h-10 w-10 hover:bg-slate-100"
+                          className="transition-opacity h-10 w-10 hover:bg-slate-100"
                         >
                           <MoreHorizontal className="h-5 w-5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem
-                          onClick={() => handleEditProduct(product)}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            handleEditProduct(product);
+                          }}
                           className="cursor-pointer"
                         >
                           <Edit className="h-4 w-4 mr-3" />
@@ -272,7 +296,7 @@ export function ProductsList({
                           onClick={() => handleDeleteProduct(product)}
                           className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
                         >
-                          <Trash2 className="h-4 w-4 mr-3" />
+                          <Trash className="h-4 w-4 mr-3" />
                           Obrisi Proizvod
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -341,30 +365,33 @@ export function ProductsList({
       )}
 
       {/* Dialogs */}
+      {editProductOpen && (
+        <CreateProductDialog
+          open={editProductOpen}
+          onOpenChange={handleEditProductChange}
+          restaurantId={restaurantId}
+          categories={categories}
+          ingredients={ingredients}
+          product={selectedProduct}
+        />
+      )}
 
-      <CreateProductDialog
-        open={editProductOpen}
-        onOpenChange={setEditProductOpen}
-        restaurantId={restaurantId}
-        categories={categories}
-        ingredients={ingredients}
-        product={selectedProduct}
-      />
-
-      <DeleteDialog
-        trigger={<></>}
-        open={deleteProductOpen}
-        onOpenChange={setDeleteProductOpen}
-        description={`Da li ste sigurni da želite da obrišete ${selectedProduct?.name}? Ova radnja je nepovratna. Proizvod će takođe biti uklonjen iz svih jelovnika.`}
-        successMessage="Proizvod je uspešno obrisan"
-        errorMessage="Greška prilikom brisanja proizvoda"
-        mutationOptions={{
-          mutationFn: () => deleteProduct(restaurantId, selectedProduct?.id),
-          onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['products'] });
-          },
-        }}
-      />
+      {deleteProductOpen && (
+        <DeleteDialog
+          trigger={<></>}
+          open={deleteProductOpen}
+          onOpenChange={setDeleteProductOpen}
+          description={`Da li ste sigurni da želite da obrišete ${selectedProduct?.name}? Ova radnja je nepovratna. Proizvod će takođe biti uklonjen iz svih jelovnika.`}
+          successMessage="Proizvod je uspešno obrisan"
+          errorMessage="Greška prilikom brisanja proizvoda"
+          mutationOptions={{
+            mutationFn: () => deleteProduct(restaurantId, selectedProduct?.id),
+            onSuccess: () => {
+              qc.invalidateQueries({ queryKey: ['products'] });
+            },
+          }}
+        />
+      )}
     </div>
   );
 }

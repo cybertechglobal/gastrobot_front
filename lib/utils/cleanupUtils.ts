@@ -109,3 +109,16 @@ export async function signoutWithCleanup(options?: {
     }
   }
 }
+
+/**
+ * Uklanja sve `undefined`, `null` i prazne stringove iz objekta.
+ * Za API params objekte da se ne šalju nepotrebne vrednosti.
+ */
+export function cleanParams<T extends Record<string, any>>(
+  params: T
+): Record<string, string | number | boolean> {
+  return Object.fromEntries(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    Object.entries(params).filter(([_, v]) => v != null && v !== '')
+  ) as Record<string, string | number | boolean>;
+}

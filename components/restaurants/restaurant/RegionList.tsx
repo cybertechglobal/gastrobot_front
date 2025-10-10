@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, Edit3, Utensils, Users } from 'lucide-react';
+import { Trash, Edit3, Utensils, Users } from 'lucide-react';
 import { Region } from '@/types/region';
 import { UserDetail } from '@/types/user';
 import { RegionsListSkeleton } from './RegionsSkeleton';
@@ -57,7 +57,7 @@ export const RegionsList: React.FC<RegionsListProps> = ({
           key={region.id}
           className={`border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-800 ${
             selectedRegion?.id === region.id
-              ? 'ring-2 ring-yellow-500 border-yellow-300 dark:border-yellow-500'
+              ? 'ring-2 ring-primary/70 border-primary/40'
               : ''
           }`}
           onClick={() => onRegionSelect(region)}
@@ -91,9 +91,9 @@ export const RegionsList: React.FC<RegionsListProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-destructive bg-white"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash className="h-4 w-4" />
                     </Button>
                   }
                   description="Region će biti trajno obrisan."

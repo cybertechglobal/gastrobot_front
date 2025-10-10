@@ -193,7 +193,7 @@ const RestaurantSettings = ({ restaurantId }: { restaurantId: string }) => {
                           handleSettingChange(setting.key, checked)
                         }
                         disabled={updateSettingsMutation.isPending}
-                        className="data-[state=checked]:bg-primary"
+                        className="data-[state=checked]:bg-primary cursor-pointer"
                       />
                     </div>
                   </div>

@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit, Trash2, Plus } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash, Plus } from 'lucide-react';
 import { MenuDialogForm } from './MenuDialogForm'; // Zameni import
 import { DeleteDialog } from '../DeleteDialog';
 import { deleteMenu } from '@/lib/api/menu';
@@ -57,7 +57,7 @@ export function MenuHeader({ menu, restaurantId, menuId }: MenuHeaderProps) {
                 </Button>
               }
             />
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <MoreHorizontal className="h-4 w-4" />
@@ -72,7 +72,7 @@ export function MenuHeader({ menu, restaurantId, menuId }: MenuHeaderProps) {
                   className="text-destructive"
                   onClick={() => setDeleteOpen(true)}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash className="h-4 w-4 mr-2" />
                   Obrisi Menu
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -10,13 +10,14 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar,
 } from '@/components/ui/sidebar'; // Core sidebar components :contentReference[oaicite:0]{index=0}
-import { Coffee, List, ClipboardList } from 'lucide-react';
+import { Coffee, List, ClipboardList, MessageSquare } from 'lucide-react';
 import clsx from 'clsx';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import LOGO from '@/public/logo.svg';
-import { ModeToggle } from './ModeToggle';
+import LOGO_G from '@/public/logo_g.svg';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
@@ -34,6 +35,7 @@ const navItems: Record<UserRole, NavItem[]> = {
     { title: 'Restorani', href: '/restaurants', icon: Coffee },
     { title: 'Kategorije', href: '/categories', icon: List },
     { title: 'Sastojci', href: '/ingredients', icon: List },
+    { title: 'Recenzije', href: '/reviews', icon: MessageSquare },
     // { title: 'Podešavanja', href: '/settings', icon: Settings },
   ],
   manager: [
@@ -56,6 +58,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
 
+  const { state } = useSidebar();
   // console.log(session)
 
   const userRole = session?.user.restaurantUsers[0]?.role || 'default';
@@ -64,6 +67,7 @@ export function AppSidebar() {
     : 'default';
 
   const currentNavItems = navItems[currentRole];
+  const isCollapsed = state === 'collapsed';
 
   return (
     <Sidebar collapsible="icon" className="bg-slate-950">
@@ -74,7 +78,7 @@ export function AppSidebar() {
             <SidebarMenuButton asChild>
               <Link
                 href="/"
-                className="flex items-center gap-2 py-[18px] bg-transparent hover:bg-transparent"
+                className="flex items-center justify-center gap-2 py-[18px] bg-transparent hover:bg-transparent"
               >
                 {/* <div
                   style={{
@@ -92,12 +96,11 @@ export function AppSidebar() {
                     }}
                   />
                 </div> */}
-                <Image src={LOGO} width={32} alt="logo" />
-
-                <span className="text-2xl font-semibold">
-                  GASTRO
-                  <span className="font-thin">BOT</span>
-                </span>
+                <Image
+                  src={isCollapsed ? LOGO_G : LOGO}
+                  width={isCollapsed ? 40 : 150}
+                  alt="logo"
+                />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -154,9 +157,9 @@ export function AppSidebar() {
             <p className="text-xs text-slate-500">Version 1.0</p>
           </div>
 
-          <div className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+          {/* <div className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
             <ModeToggle />
-          </div>
+          </div> */}
         </div>
       </SidebarFooter>
     </Sidebar>

@@ -11,24 +11,34 @@ import {
 import { useFcm } from '@/hooks/useFcm';
 import { useSession } from 'next-auth/react';
 import { X } from 'lucide-react';
+import { UserRole } from '@/types/user';
 
 export function NotificationPermission() {
-  const { permission, requestPermissionAndToken } = useFcm({ auto: true });
   const { data: session } = useSession();
   const [isVisible, setIsVisible] = useState(false);
   const [isVisibleInfo, setIsVisibleInfo] = useState(false);
 
+  const role: UserRole = session?.user?.restaurantUsers[0]?.role;
+  const isRoot = role === 'root';
+
+  const { permission, requestPermissionAndToken } = useFcm({
+    auto: true,
+    role,
+  });
+
   useEffect(() => {
+    if (!session?.user || isRoot) return;
+
     setIsVisible(permission === 'default');
     setIsVisibleInfo(permission === 'denied');
-  }, [permission]);
+  }, [isRoot, permission, session?.user]);
 
   const handleRequest = async () => {
     await requestPermissionAndToken();
     setIsVisible(false);
   };
 
-  if (!session?.user) return null;
+  if (!session?.user || isRoot) return null;
 
   if (isVisibleInfo) {
     return (

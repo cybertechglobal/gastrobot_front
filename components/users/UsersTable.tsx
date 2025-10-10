@@ -12,8 +12,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -25,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import {
   MoreHorizontal,
-  Trash2,
+  Trash,
   Users,
   Mail,
   AlertCircle,
@@ -143,7 +141,7 @@ const UserCard = ({
           </div>
         </div>
 
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
               <span className="sr-only">Otvori meni</span>
@@ -151,8 +149,6 @@ const UserCard = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Akcije</DropdownMenuLabel>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={(e) => onEdit(user, e)}
               className="cursor-pointer text-sm"
@@ -164,7 +160,7 @@ const UserCard = ({
               className="text-destructive cursor-pointer text-sm"
               onClick={() => onDelete(user)}
             >
-              <Trash2 className="h-3 w-3 mr-2" />
+              <Trash className="h-3 w-3 mr-2" />
               Obrisi
             </DropdownMenuItem>
           </DropdownMenuContent>

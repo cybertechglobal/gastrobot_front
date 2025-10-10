@@ -21,6 +21,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { updateUser } from '@/lib/api/users';
 
 export const editUserSchema = z.object({
@@ -43,7 +50,6 @@ export const editUserSchema = z.object({
 
 export type EditUserFormData = z.infer<typeof editUserSchema>;
 
-// Type za podatke koji dolaze sa servera
 export type UserData = {
   id: string;
   firstname: string;
@@ -71,7 +77,9 @@ export function EditUserForm({
   open,
   onOpenChange,
 }: EditUserFormProps) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const qc = useQueryClient();
+  
   const {
     register,
     handleSubmit,
@@ -89,7 +97,6 @@ export function EditUserForm({
     },
   });
 
-  // Postavi vrednosti kada se inicijalni podaci promene
   useEffect(() => {
     if (initialData) {
       reset({
@@ -106,7 +113,6 @@ export function EditUserForm({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['restaurant-users'] });
       onOpenChange?.(false);
-      console.log('Korisnik je uspešno ažuriran!');
     },
     onError: (error) => {
       console.error('Greška pri ažuriranju korisnika:', error);
@@ -119,82 +125,101 @@ export function EditUserForm({
 
   const roleValue = watch('role');
 
+  const FormContent = (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="firstname">Ime</Label>
+        <Input
+          id="firstname"
+          placeholder="Unesite ime"
+          {...register('firstname')}
+        />
+        {errors.firstname && (
+          <p className="text-sm text-red-500">{errors.firstname.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="lastname">Prezime</Label>
+        <Input
+          id="lastname"
+          placeholder="Unesite prezime"
+          {...register('lastname')}
+        />
+        {errors.lastname && (
+          <p className="text-sm text-red-500">{errors.lastname.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="Unesite email adresu"
+          {...register('email')}
+        />
+        {errors.email && (
+          <p className="text-sm text-red-500">{errors.email.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="role">Uloga</Label>
+        <Select
+          onValueChange={(value) =>
+            setValue('role', value as 'waiter' | 'manager')
+          }
+          value={roleValue}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Izaberite ulogu" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="waiter">Konobar</SelectItem>
+            <SelectItem value="manager">Menadžer</SelectItem>
+          </SelectContent>
+        </Select>
+        {errors.role && (
+          <p className="text-sm text-red-500">{errors.role.message}</p>
+        )}
+      </div>
+
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={updateUserMutation.isPending}
+      >
+        {updateUserMutation.isPending
+          ? 'Ažuriranje...'
+          : 'Ažuriraj korisnika'}
+      </Button>
+    </form>
+  );
+
+  if (isDesktop) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Izmeni korisnika</DialogTitle>
+          </DialogHeader>
+          {FormContent}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Izmeni korisnika</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="firstname">Ime</Label>
-            <Input
-              id="firstname"
-              placeholder="Unesite ime"
-              {...register('firstname')}
-            />
-            {errors.firstname && (
-              <p className="text-sm text-red-500">{errors.firstname.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="lastname">Prezime</Label>
-            <Input
-              id="lastname"
-              placeholder="Unesite prezime"
-              {...register('lastname')}
-            />
-            {errors.lastname && (
-              <p className="text-sm text-red-500">{errors.lastname.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Unesite email adresu"
-              {...register('email')}
-            />
-            {errors.email && (
-              <p className="text-sm text-red-500">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="role">Uloga</Label>
-            <Select
-              onValueChange={(value) =>
-                setValue('role', value as 'waiter' | 'manager')
-              }
-              value={roleValue}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Izaberite ulogu" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="waiter">Konobar</SelectItem>
-                <SelectItem value="manager">Menadžer</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.role && (
-              <p className="text-sm text-red-500">{errors.role.message}</p>
-            )}
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={updateUserMutation.isPending}
-          >
-            {updateUserMutation.isPending
-              ? 'Ažuriranje...'
-              : 'Ažuriraj korisnika'}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent>
+        <DrawerHeader className="text-left">
+          <DrawerTitle>Izmeni korisnika</DrawerTitle>
+        </DrawerHeader>
+        <div className="px-4 pb-4 overflow-y-auto">
+          {FormContent}
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
