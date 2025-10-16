@@ -252,19 +252,22 @@ export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
       // console.log('TRIGEEEEEER', trigger);
       // console.log('TRIGEEEEEER', user);
 
-      // if (trigger === 'update' && session) {
-      //   console.log('UPDATING: Old token:', token.user?.bearerToken);
-      //   console.log('UPDATING: New token:', session?.bearerToken);
-
-      //   return {
-      //     // ...token,
-      //     user: {
-      //       ...token.user,
-      //       bearerToken: session.bearerToken,
-      //       restaurantUsers: token.user?.restaurantUsers || [],
-      //     },
-      //   } as JWT;
-      // }
+      console.log('unstablee ', trigger);
+      console.log('unstablee ', session);
+      if (trigger === 'update' && session?.user) {
+        return {
+          ...token,
+          user: {
+            ...token.user,
+            firstname: session.user.firstname,
+            lastname: session.user.lastname,
+            phoneNumber: session.user.phoneNumber,
+            ...(session?.user?.profileImageUrl && {
+              profileImageUrl: session.user.profileImageUrl,
+            }),
+          },
+        } as JWT;
+      }
 
       if (token?.bearerToken) {
         const decodedToken = jwtDecode(token.bearerToken);

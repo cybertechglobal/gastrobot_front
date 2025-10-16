@@ -1,7 +1,7 @@
 // lib/api/tables.ts
 import { FetchOptions } from '@/types/global';
 import { apiRequest } from '../client';
-import { Table } from '@/types/table';
+import { QrCode, Table } from '@/types/table';
 
 export type TablePayload = {
   name: string;
@@ -40,8 +40,21 @@ export async function updateRestaurantTable(
   });
 }
 
-export async function deleteRestaurantTable(tableId: string | undefined): Promise<void> {
+export async function deleteRestaurantTable(
+  tableId: string | undefined
+): Promise<void> {
   return apiRequest<void>(`tables/${tableId}`, 'DELETE', undefined, {
     isProtected: true,
   });
 }
+
+export const generateQRCode = async (tableId: string): Promise<QrCode> => {
+  return apiRequest<QrCode>(
+    `qr-code`,
+    'POST',
+    { tableId },
+    {
+      isProtected: true,
+    }
+  );
+};

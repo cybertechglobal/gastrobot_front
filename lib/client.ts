@@ -164,10 +164,11 @@ export async function apiRequest<T = any>(
       throw error;
     }
 
-    const dataa = await res.json();
-    // console.log('DATAAAAAAAA', dataa);
-
-    return dataa;
+    try {
+      return (await res.json()) as T;
+    } catch {
+      return undefined as T;
+    }
   } catch (err) {
     clearTimeout(timeoutId);
 

@@ -2,6 +2,6 @@
 'use server';
 import { unstable_update } from '@/auth';
 
-export async function updateSession(newToken: string) {
-  await unstable_update({ bearerToken: newToken });
+export async function updateSession(body: any) {
+  await unstable_update(body);
 }

@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from './ui/button';
+import Link from 'next/link';
 
 const Header = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -50,7 +51,7 @@ const Header = () => {
                       <ChevronDown className={`w-4 h-4 text-primary`} />
                     </div>
                   </div> */}
-                  <div className='flex items-center gap-3'>
+                  <div className="flex items-center gap-3">
                     <div className="hidden sm:flex">
                       <p className="text-sm">
                         {session.user.firstname} {session.user.lastname}
@@ -88,11 +89,11 @@ const Header = () => {
 
                   {/* Menu Items */}
                   <div className="py-2">
-                    <DropdownMenuItem
-                      className="px-6 py-3 text-gray-700 hover:bg-gray-50 cursor-pointer focus:bg-gray-50 transition-colors duration-150"
-                    >
-                      <span className="text-base">Profil</span>
-                    </DropdownMenuItem>
+                    <Link href="/profile">
+                      <DropdownMenuItem className="px-6 py-3 text-gray-700 hover:bg-gray-50 cursor-pointer focus:bg-gray-50 transition-colors duration-150">
+                        <span className="text-base">Profil</span>
+                      </DropdownMenuItem>
+                    </Link>
 
                     <DropdownMenuItem className="px-6 py-3 text-gray-700 hover:bg-gray-50 cursor-pointer focus:bg-gray-50 transition-colors duration-150">
                       <span className="text-base">Korisnička podrška</span>

@@ -7,4 +7,13 @@ export interface Table {
   capacity: number;
   restaurantId: string;
   regionId: string;
+  qrCode: QrCode;
+}
+
+export interface QrCode {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  imageUrl: string;
 }

@@ -18,6 +18,18 @@ export async function updateUser(id: string, data: any) {
   return apiRequest(`v1/users/${id}`, 'PUT', data, { isProtected: true });
 }
 
+export async function updateUserImage(data: FormData) {
+  return apiRequest(`/users/profile-image`, 'PATCH', data, {
+    isProtected: true,
+  });
+}
+
+export async function updateUserPassword(data: any) {
+  return apiRequest(`/users/change-password`, 'PATCH', data, {
+    isProtected: true,
+  });
+}
+
 export async function deleteUser(id: string) {
   return apiRequest(`v1/users/${id}`, 'DELETE', undefined, {
     isProtected: true,

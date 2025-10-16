@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from './auth';
 
-const AUTH_PAGES = ['/login', '/register'];
+const AUTH_PAGES = ['/login', '/forgot-password', '/reset-password'];
 const PUBLIC_PATHS = [
   '/favicon.ico',
   '/api/auth', // next-auth API

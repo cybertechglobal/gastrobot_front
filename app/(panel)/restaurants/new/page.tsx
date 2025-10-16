@@ -24,13 +24,13 @@ import {
 import { Clock, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 import { Stepper } from '@/components/Stepper';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { restaurantSchema } from '@/lib/validation/restaurant';
 import { z } from 'zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { createLocation } from '@/lib/api/locations';
+import { createLocation, fetchCities } from '@/lib/api/locations';
 import { createRestaurant } from '@/lib/api/restaurants';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -80,6 +80,12 @@ export default function NewRestaurantPage() {
   const router = useRouter();
   const fromDefault = timeOptions.find((t) => t === '08:00') ?? timeOptions[0];
   const toDefault = timeOptions.find((t) => t === '22:00') ?? timeOptions[0];
+
+  const { data: cities } = useQuery({
+    queryKey: ['cities'],
+    queryFn: () => fetchCities(),
+    staleTime: Infinity,
+  });
 
   const methods = useForm<RestaurantForm>({
     resolver: zodResolver(restaurantSchema),
@@ -430,13 +436,45 @@ export default function NewRestaurantPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="city">Grad *</Label>
-              <Input
-                id="city"
-                placeholder="Grad"
-                {...methods.register('location.city')}
-                className={cn(
-                  methods.formState.errors.location?.city &&
-                    'border-red-500 focus-visible:ring-red-500'
+              <Controller
+                name="location.city"
+                control={methods.control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Pronađi grad i automatski popuni zipCode
+                      const selectedCity = cities?.find(
+                        (city) => city.name === value
+                      );
+                      if (selectedCity) {
+                        methods.setValue(
+                          'location.zipCode',
+                          selectedCity.zipcode
+                        );
+                      }
+                    }}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        'w-full dark:border-0 dark:bg-[#1C1E24]',
+                        methods.formState.errors.location?.city &&
+                          'border-red-500 focus-visible:ring-red-500'
+                      )}
+                    >
+                      <SelectValue placeholder="Grad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {cities?.map((city) => (
+                          <SelectItem key={city.id} value={city.name}>
+                            {city.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 )}
               />
               {methods.formState.errors.location?.city && (
@@ -473,7 +511,7 @@ export default function NewRestaurantPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="zipCode">Poštanski broj *</Label>
+            <Label htmlFor="zipCode">Poštanski broj</Label>
             <Input
               id="zipCode"
               placeholder="Poštanski broj"
@@ -482,6 +520,7 @@ export default function NewRestaurantPage() {
                 methods.formState.errors.location?.zipCode &&
                   'border-red-500 focus-visible:ring-red-500'
               )}
+              readOnly
             />
             {methods.formState.errors.location?.zipCode && (
               <p className="text-sm text-red-500">

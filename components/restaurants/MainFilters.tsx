@@ -16,6 +16,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import { RestaurantFilters } from '@/types/restaurant';
+import { useQuery } from '@tanstack/react-query';
+import { fetchCities } from '@/lib/api/locations';
 
 const MainFilters = ({ initialFilters }: { initialFilters: any }) => {
   const router = useRouter();
@@ -26,6 +28,12 @@ const MainFilters = ({ initialFilters }: { initialFilters: any }) => {
   });
 
   const debouncedSearch = useDebounce(filters.name, 500);
+
+  const { data: cities } = useQuery({
+    queryKey: ['cities'],
+    queryFn: () => fetchCities(),
+    staleTime: Infinity,
+  });
 
   const updateFilter = useCallback((key: string, value: string) => {
     setFilters((prev: any) => ({
@@ -67,7 +75,6 @@ const MainFilters = ({ initialFilters }: { initialFilters: any }) => {
     [filters, updateUrl]
   );
 
-  const cities = ['Beograd', 'Nis'];
   const statuses = ['active', 'inactive'];
 
   const handleFilterCity = (query: string) => {
@@ -141,9 +148,9 @@ const MainFilters = ({ initialFilters }: { initialFilters: any }) => {
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {cities.map((city) => (
-                <SelectItem key={city} value={city}>
-                  {city}
+              {cities?.map((city) => (
+                <SelectItem key={city.id} value={city.name}>
+                  {city.name}
                 </SelectItem>
               ))}
             </SelectGroup>

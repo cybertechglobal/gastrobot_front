@@ -31,15 +31,15 @@ import {
 import { Clock, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { updateRestaurant } from '@/lib/api/restaurants';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { updateLocation } from '@/lib/api/locations';
+import { fetchCities, updateLocation } from '@/lib/api/locations';
 import { DAYS_OF_WEEK } from '@/lib/utils/translations';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
@@ -95,6 +95,12 @@ export function EditRestaurantDialog({
   const timeOptions = useTimeOptions();
   const [open, setOpen] = useState(false);
   const router = useRouter();
+
+  const { data: cities } = useQuery({
+    queryKey: ['cities'],
+    queryFn: () => fetchCities(),
+    staleTime: Infinity,
+  });
 
   const parseWorkingHours = (workingHours: any) => {
     return DAYS_OF_WEEK.map(({ day, key }) => {
@@ -274,25 +280,36 @@ export function EditRestaurantDialog({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="grid gap-3">
             <Label htmlFor="city">Grad</Label>
-            <Input id="city" {...register('city')} placeholder="Beograd" />
+            <Controller
+              name="city"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full dark:border-0 dark:bg-[#1C1E24]">
+                    <SelectValue placeholder="Beograd" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {cities?.map((city) => (
+                        <SelectItem key={city.id} value={city.name}>
+                          {city.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
           <div className="grid gap-3">
             <Label htmlFor="zipCode">Poštanski broj</Label>
-            <Input
-              id="zipCode"
-              {...register('zipCode')}
-              placeholder="11000"
-            />
+            <Input id="zipCode" {...register('zipCode')} placeholder="11000" />
           </div>
         </div>
 
         <div className="grid gap-3">
           <Label htmlFor="country">Zemlja</Label>
-          <Input
-            id="country"
-            {...register('country')}
-            placeholder="Srbija"
-          />
+          <Input id="country" {...register('country')} placeholder="Srbija" />
         </div>
       </div>
 
@@ -384,9 +401,7 @@ export function EditRestaurantDialog({
                   </div>
                 </div>
               ) : (
-                <span className="text-sm text-muted-foreground">
-                  Zatvoreno
-                </span>
+                <span className="text-sm text-muted-foreground">Zatvoreno</span>
               )}
             </div>
           ))}
@@ -425,9 +440,7 @@ export function EditRestaurantDialog({
         <DrawerHeader className="text-left">
           <DrawerTitle>Izmena restorana</DrawerTitle>
         </DrawerHeader>
-        <div className="flex-1 overflow-y-auto px-4">
-          {FormContent}
-        </div>
+        <div className="flex-1 overflow-y-auto px-4">{FormContent}</div>
         <DrawerFooter className="pt-3">
           <Button
             onClick={handleSubmit(onSubmit)}

@@ -1,5 +1,6 @@
 import { FetchOptions } from '@/types/global';
 import { apiRequest } from '../client';
+import { City } from '@/types/city';
 
 export async function fetchLocations(
   options: FetchOptions & { isProtected?: boolean } = {}
@@ -19,4 +20,10 @@ export async function deleteLocation(id: string) {
   return apiRequest(`v1/locations/${id}`, 'DELETE', undefined, {
     isProtected: true,
   });
+}
+
+export async function fetchCities(
+  options: FetchOptions & { isProtected?: boolean } = {}
+): Promise<City[]> {
+  return apiRequest('city', 'GET', undefined, options);
 }
