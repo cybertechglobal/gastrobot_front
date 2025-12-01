@@ -286,7 +286,7 @@ export default function AuthForm() {
   );
 
   return (
-    <div className="w-full max-w-sm rounded-2xl p-8 space-y-8">
+    <div className="w-full max-w-sm rounded-2xl p-8 space-y-8 z-10">
       {isUserRoleBlocked && <UserRoleBlockedPrompt />}
 
       {/* --- Email Verification Prompt --- */}

@@ -8,10 +8,10 @@ import { useMutation } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import Link from 'next/link';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { forgotPassword } from '@/lib/api/auth';
+import { Link } from '@/components/Link';
 
 const forgotPasswordSchema = z.object({
   email: z.string().min(1, 'Email je obavezan').email('Nevalidan email format'),
@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
 
   if (emailSent) {
     return (
-      <div className="w-full max-w-md p-8 space-y-6">
+      <div className="w-full max-w-md p-8 space-y-6 z-10">
         <div className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
             <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
@@ -79,7 +79,7 @@ export default function ForgotPasswordPage() {
             {mutation.isPending ? 'Šalje se...' : 'Pošalji ponovo'}
           </Button>
 
-          <Link href="/login" className="block">
+          <Link href="/login" redirectType="hard" className="block">
             <Button variant="ghost" className="w-full">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Nazad na prijavu
@@ -95,6 +95,7 @@ export default function ForgotPasswordPage() {
       <div className="space-y-2">
         <Link
           href="/login"
+          redirectType="hard"
           className="inline-flex items-center text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
@@ -149,7 +150,11 @@ export default function ForgotPasswordPage() {
 
       <div className="text-center text-sm text-gray-500 dark:text-slate-500">
         Setili ste se lozinke?{' '}
-        <Link href="/login" className="text-primary hover:underline">
+        <Link
+          href="/login"
+          redirectType="hard"
+          className="text-primary hover:underline"
+        >
           Prijavite se
         </Link>
       </div>

@@ -7,7 +7,7 @@ import { Suspense } from 'react';
 // Loading component for Suspense fallback
 function ResetPasswordLoading() {
   return (
-    <div className="w-full max-w-md p-8 space-y-6">
+    <div className="w-full max-w-md p-8 space-y-6 z-10">
       <div className="space-y-2">
         <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
       </div>

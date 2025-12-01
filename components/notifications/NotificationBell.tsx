@@ -66,8 +66,6 @@ export function NotificationBell() {
         endDate,
       }),
     getNextPageParam: (lastPage, allPages) => {
-      // console.log('Last page:', lastPage);
-      // console.log('All pages:', allPages.length);
       return lastPage.pagination.hasNextPage ? allPages.length + 1 : undefined;
     },
     initialPageParam: 1,

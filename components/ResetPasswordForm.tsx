@@ -9,11 +9,11 @@ import { useMutation } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { resetPassword } from '@/lib/api/auth';
+import { Link } from './Link';
 
 const resetPasswordSchema = z
   .object({
@@ -97,7 +97,7 @@ export function ResetPasswordForm() {
         </div>
 
         <div className="space-y-3">
-          <Link href="/login" className="block">
+          <Link href="/login" redirectType="hard" className="block">
             <Button variant="outline" className="w-full uppercase">
               Nazad na prijavu
             </Button>
@@ -126,7 +126,7 @@ export function ResetPasswordForm() {
           </p>
         </div>
 
-        <Link href="/login" className="block uppercase">
+        <Link href="/login" redirectType="hard" className="block uppercase">
           <Button className="w-full bg-primary">prijavi se</Button>
         </Link>
       </div>
@@ -220,7 +220,11 @@ export function ResetPasswordForm() {
 
       <div className="text-center text-sm text-gray-500 dark:text-slate-500">
         Setili ste se lozinke?{' '}
-        <Link href="/login" className="text-primary hover:underline">
+        <Link
+          href="/login"
+          redirectType="hard"
+          className="text-primary hover:underline"
+        >
           Prijavite se
         </Link>
       </div>
