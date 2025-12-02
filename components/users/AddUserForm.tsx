@@ -45,7 +45,7 @@ export const addUserSchema = z
       .min(1, 'Lozinka je obavezna')
       .min(8, 'Lozinka mora imati najmanje 8 karaktera'),
     confirmPassword: z.string().min(1, 'Potvrda lozinke je obavezna'),
-    role: z.enum(['waiter', 'manager'], {
+    role: z.enum(['waiter', 'manager', 'chef'], {
       required_error: 'Molimo izaberite ulogu',
     }),
   })
@@ -223,7 +223,7 @@ export function AddUserForm({ restaurantId }: AddUserFormProps) {
             <Label htmlFor="role">Uloga</Label>
             <Select
               onValueChange={(value) =>
-                setValue('role', value as 'waiter' | 'manager')
+                setValue('role', value as 'waiter' | 'manager' | 'chef')
               }
               value={roleValue}
             >
@@ -232,6 +232,7 @@ export function AddUserForm({ restaurantId }: AddUserFormProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="waiter">Konobar</SelectItem>
+                <SelectItem value="chef">Kuvar</SelectItem>
                 <SelectItem value="manager">Menadžer</SelectItem>
               </SelectContent>
             </Select>

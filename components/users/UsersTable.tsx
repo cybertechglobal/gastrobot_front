@@ -119,8 +119,8 @@ const UserCard = ({
   <Card className="hover:shadow-md transition-shadow duration-200">
     <CardContent className="p-6">
       <div className="flex items-start justify-between">
-        <div className="flex items-start space-x-4 flex-1">
-          <Avatar className="h-12 w-12">
+        <div className="flex items-start space-x-4 flex-1 min-w-0">
+          <Avatar className="h-12 w-12 flex-shrink-0">
             <AvatarFallback className="text-lg">
               {getUserInitials(user.user.firstname, user.user.lastname)}
             </AvatarFallback>
@@ -129,8 +129,8 @@ const UserCard = ({
             <h3 className="font-semibold text-lg truncate">
               {user.user.firstname} {user.user.lastname}
             </h3>
-            <div className="flex items-center text-sm text-muted-foreground mt-1">
-              <Mail className="h-4 w-4 mr-1" />
+            <div className="flex items-center text-sm text-muted-foreground mt-1 gap-1 min-w-0">
+              <Mail className="h-4 w-4 flex-shrink-0" />
               <span className="truncate">{user.user.email}</span>
             </div>
             <div className="mt-3">
@@ -143,7 +143,7 @@ const UserCard = ({
 
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
+            <Button variant="ghost" className="h-8 w-8 p-0 flex-shrink-0">
               <span className="sr-only">Otvori meni</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
@@ -169,8 +169,8 @@ const UserCard = ({
 
       <div className="mt-4 pt-4 border-t">
         <div className="flex items-center text-sm text-muted-foreground">
-          <Calendar className="h-4 w-4 mr-1" />
-          <span>
+          <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
+          <span className="truncate">
             Kreiran: {new Date(user.user.createdAt).toLocaleDateString('sr-RS')}
           </span>
         </div>
@@ -327,7 +327,7 @@ const UsersTable = ({ restaurantId }: { restaurantId: string }) => {
             <SelectContent>
               <SelectItem value="all">Sve role</SelectItem>
               <SelectItem value="waiter">Konobar</SelectItem>
-              {/* <SelectItem value="kuvar">Kuvar</SelectItem> */}
+              <SelectItem value="chef">Kuvar</SelectItem>
               <SelectItem value="manager">Manager</SelectItem>
             </SelectContent>
           </Select>

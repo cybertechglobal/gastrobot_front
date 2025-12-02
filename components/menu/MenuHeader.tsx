@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit, Trash, Plus } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash, Plus, ArrowLeft } from 'lucide-react';
 import { MenuDialogForm } from './MenuDialogForm'; // Zameni import
 import { DeleteDialog } from '../DeleteDialog';
 import { deleteMenu } from '@/lib/api/menu';
@@ -37,16 +37,25 @@ export function MenuHeader({ menu, restaurantId, menuId }: MenuHeaderProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <CardTitle className="text-2xl font-bold">{menu.name}</CardTitle>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {totalItems} proizvod(a)
-              </span>
+        <div className="flex items-start gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push(`/restaurants/${restaurantId}#jelovnik`)}
+            className="mt-1"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1 flex items-center justify-between">
+            <div className="space-y-2">
+              <CardTitle className="text-2xl font-bold">{menu.name}</CardTitle>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {totalItems} proizvod(a)
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
             <AddProductDialog
               restaurantId={restaurantId}
               menuId={menuId}
@@ -77,6 +86,7 @@ export function MenuHeader({ menu, restaurantId, menuId }: MenuHeaderProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
         </div>
       </CardHeader>

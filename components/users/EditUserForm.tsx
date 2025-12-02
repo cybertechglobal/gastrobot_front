@@ -43,7 +43,7 @@ export const editUserSchema = z.object({
     .string()
     .min(1, 'Email je obavezan')
     .email('Neispravna email adresa'),
-  role: z.enum(['waiter', 'manager'], {
+  role: z.enum(['waiter', 'manager', 'chef'], {
     required_error: 'Molimo izaberite ulogu',
   }),
 });
@@ -55,7 +55,7 @@ export type UserData = {
   firstname: string;
   lastname: string;
   email: string;
-  role: 'waiter' | 'manager';
+  role: 'waiter' | 'manager' | 'chef';
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;
@@ -168,7 +168,7 @@ export function EditUserForm({
         <Label htmlFor="role">Uloga</Label>
         <Select
           onValueChange={(value) =>
-            setValue('role', value as 'waiter' | 'manager')
+            setValue('role', value as 'waiter' | 'manager' | 'chef')
           }
           value={roleValue}
         >
@@ -177,6 +177,7 @@ export function EditUserForm({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="waiter">Konobar</SelectItem>
+            <SelectItem value="chef">Kuvar</SelectItem>
             <SelectItem value="manager">Menadžer</SelectItem>
           </SelectContent>
         </Select>

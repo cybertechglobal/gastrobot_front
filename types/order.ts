@@ -1,6 +1,8 @@
+import { Combobox } from './menu';
 import { Product } from './product';
 import { Restaurant } from './restaurant';
 import { UserDetail } from './user';
+import { Reservation } from './reservation';
 
 export interface OrdersResponse {
   data: Order[];
@@ -26,6 +28,7 @@ export interface Order {
   note: string | null;
   orderNumber: string | null;
   user: UserDetail | null;
+  reservation: Reservation | null;
 }
 
 export interface OrderItem {
@@ -45,4 +48,5 @@ export interface MenuItem {
   deletedAt: string | null;
   price: number;
   product: Product;
+  combo: Combobox;
 }

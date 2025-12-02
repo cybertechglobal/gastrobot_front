@@ -29,6 +29,7 @@ import {
   UtensilsCrossed,
   MessageSquare,
   Loader2,
+  Calendar,
 } from 'lucide-react';
 import { Order, OrderItem } from '@/types/order';
 import { formatTimeInParts } from '@/lib/utils/utils';
@@ -128,13 +129,33 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold flex items-center">
-                  <UtensilsCrossed className="w-5 h-5 mr-2" />
-                  Sto {order.tableNum}
-                </h2>
-                <Badge variant="secondary" className="text-sm font-mono mt-1">
-                  #{order.orderNumber}
-                </Badge>
+                {order.reservation ? (
+                  <>
+                    <h2 className="text-xl font-semibold flex items-center">
+                      <Calendar className="w-5 h-5 mr-2" />
+                      Porudžbina za rezervaciju
+                    </h2>
+                    <Badge
+                      variant="secondary"
+                      className="text-sm font-mono mt-1"
+                    >
+                      #{order.reservation.reservationNumber}
+                    </Badge>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-xl font-semibold flex items-center">
+                      <UtensilsCrossed className="w-5 h-5 mr-2" />
+                      Sto {order.tableNum}
+                    </h2>
+                    <Badge
+                      variant="secondary"
+                      className="text-sm font-mono mt-1"
+                    >
+                      #{order.orderNumber}
+                    </Badge>
+                  </>
+                )}
               </div>
               {getStatusBadge(order.status)}
             </div>
@@ -145,6 +166,20 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Reservation Info Banner */}
+        {order.reservation && (
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              Ova porudžbina je vezana za rezervaciju{' '}
+              <span className="font-semibold">
+                #{order.reservation.reservationNumber}
+              </span>
+              . Status će se automatski promeniti kada se rezervacija potvrdi
+              ili odbije.
+            </p>
+          </div>
+        )}
 
         {/* Customer Info */}
         {order.user && (

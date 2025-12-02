@@ -35,6 +35,7 @@ import { createRestaurant } from '@/lib/api/restaurants';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { CountrySelect } from '@/components/CountrySelect';
+import { CityCombobox } from '@/components/CityCombobox';
 
 const DAYS = [
   'Monday',
@@ -64,8 +65,18 @@ type RestaurantForm = z.infer<typeof restaurantSchema>;
 const useTimeOptions = () => {
   return useMemo(() => {
     const times: string[] = [];
+    // Od 00:00 do 23:30 (trenutni dan)
     for (let h = 0; h < 24; h++) {
       for (let m = 0; m < 60; m += 30) {
+        const hh = h.toString().padStart(2, '0');
+        const mm = m.toString().padStart(2, '0');
+        times.push(`${hh}:${mm}`);
+      }
+    }
+    // Dodaj vreme za sledeći dan (00:00 - 03:00)
+    for (let h = 0; h <= 3; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        if (h === 3 && m > 0) break; // Završi na 03:00
         const hh = h.toString().padStart(2, '0');
         const mm = m.toString().padStart(2, '0');
         times.push(`${hh}:${mm}`);
@@ -95,7 +106,7 @@ export default function NewRestaurantPage() {
       email: '',
       phoneNumber: '',
       logo: null,
-      location: { address: '', city: '', country: '', zipCode: '' },
+      location: { address: '', city: '', country: '', zipCode: '', lat: '', lng: '' },
       hours: DAYS.map((day) => ({
         day,
         open: false,
@@ -440,41 +451,19 @@ export default function NewRestaurantPage() {
                 name="location.city"
                 control={methods.control}
                 render={({ field }) => (
-                  <Select
+                  <CityCombobox
+                    cities={cities}
                     value={field.value}
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      // Pronađi grad i automatski popuni zipCode
-                      const selectedCity = cities?.find(
-                        (city) => city.name === value
+                    onValueChange={field.onChange}
+                    onCitySelect={(selectedCity) => {
+                      methods.setValue(
+                        'location.zipCode',
+                        selectedCity.zipcode
                       );
-                      if (selectedCity) {
-                        methods.setValue(
-                          'location.zipCode',
-                          selectedCity.zipcode
-                        );
-                      }
                     }}
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        'w-full dark:border-0 dark:bg-[#1C1E24]',
-                        methods.formState.errors.location?.city &&
-                          'border-red-500 focus-visible:ring-red-500'
-                      )}
-                    >
-                      <SelectValue placeholder="Grad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {cities?.map((city) => (
-                          <SelectItem key={city.id} value={city.name}>
-                            {city.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                    error={methods.formState.errors.location?.city?.message}
+                    placeholder="Izaberi grad..."
+                  />
                 )}
               />
               {methods.formState.errors.location?.city && (
@@ -527,6 +516,43 @@ export default function NewRestaurantPage() {
                 {methods.formState.errors.location.zipCode.message}
               </p>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="lat">Latitude (Geografska širina)</Label>
+              <Input
+                id="lat"
+                placeholder="44.7866"
+                {...methods.register('location.lat')}
+                className={cn(
+                  methods.formState.errors.location?.lat &&
+                    'border-red-500 focus-visible:ring-red-500'
+                )}
+              />
+              {methods.formState.errors.location?.lat && (
+                <p className="text-sm text-red-500">
+                  {methods.formState.errors.location.lat.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lng">Longitude (Geografska dužina)</Label>
+              <Input
+                id="lng"
+                placeholder="20.4489"
+                {...methods.register('location.lng')}
+                className={cn(
+                  methods.formState.errors.location?.lng &&
+                    'border-red-500 focus-visible:ring-red-500'
+                )}
+              />
+              {methods.formState.errors.location?.lng && (
+                <p className="text-sm text-red-500">
+                  {methods.formState.errors.location.lng.message}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>

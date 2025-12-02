@@ -25,6 +25,7 @@ import {
   MessageSquare,
   RefreshCw,
   Phone,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { Reservation } from '@/types/reservation';
 import FilterForm from './FilterForm';
@@ -37,6 +38,8 @@ import { getUrgencyIndicator } from '@/lib/utils/getUrgencyIndicator';
 import { Region } from '@/types/region';
 import { useReservationDetail } from '@/hooks/useReservationDetails';
 import ReservationDetailOverlay from './ReservationDetail';
+import { useOrderDetail } from '@/hooks/useOrderDetail';
+import OrderDetail from '@/components/orders/OrderDetail';
 
 // Skeleton component for processed reservations
 const ProcessedReservationSkeleton = () => (
@@ -116,6 +119,17 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
     openReservation,
     closeReservation,
   } = useReservationDetail({
+    resId: restaurantId,
+  });
+
+  const {
+    selectedOrder,
+    isOpen: isOrderOverlayOpen,
+    isLoading: isOrderLoading,
+    error: orderError,
+    openOrder,
+    closeOrder,
+  } = useOrderDetail({
     resId: restaurantId,
   });
 
@@ -372,6 +386,32 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                         </div>
                       )}
 
+                      {/* Order Information */}
+                      {reservation.order && (
+                        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-sm font-medium flex items-center text-blue-900 dark:text-blue-100">
+                              <UtensilsCrossed className="w-4 h-4 mr-1" />
+                              Rezervacija sadrži narudžbinu
+                            </Label>
+                          </div>
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                            Gost je unapred naručio hranu za ovu rezervaciju.
+                          </p>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openOrder(reservation.order!.id);
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                          >
+                            Prikaži naručene proizvode
+                          </Button>
+                        </div>
+                      )}
+
                       {/* Admin Note Input - Only for managers */}
                       {canEdit && (
                         <div className="space-y-2">
@@ -395,28 +435,38 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                     </CardContent>
 
                     {canEdit && (
-                      <CardFooter className="flex space-x-3 pt-4">
-                        <Button
-                          onClick={() =>
-                            handleConfirmReservation(reservation.id)
-                          }
-                          disabled={isUpdating}
-                          className="flex-1"
-                        >
-                          <Check className="w-4 h-4 mr-2" />
-                          Potvrdi
-                        </Button>
-                        <Button
-                          onClick={() =>
-                            handleRejectReservation(reservation.id)
-                          }
-                          disabled={isUpdating}
-                          variant="destructive"
-                          className="flex-1"
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Odbij
-                        </Button>
+                      <CardFooter className="flex flex-col space-y-3 pt-4">
+                        {reservation.order && (
+                          <div className="w-full bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 rounded-lg text-center">
+                            <p className="text-xs text-green-700 dark:text-green-300">
+                              Kada potvrdite rezervaciju, narudžbina će
+                              automatski biti potvrđena.
+                            </p>
+                          </div>
+                        )}
+                        <div className="flex space-x-3 w-full">
+                          <Button
+                            onClick={() =>
+                              handleConfirmReservation(reservation.id)
+                            }
+                            disabled={isUpdating}
+                            className="flex-1"
+                          >
+                            <Check className="w-4 h-4 mr-2" />
+                            Potvrdi
+                          </Button>
+                          <Button
+                            onClick={() =>
+                              handleRejectReservation(reservation.id)
+                            }
+                            disabled={isUpdating}
+                            variant="destructive"
+                            className="flex-1"
+                          >
+                            <X className="w-4 h-4 mr-2" />
+                            Odbij
+                          </Button>
+                        </div>
                       </CardFooter>
                     )}
                   </Card>
@@ -574,7 +624,8 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                         {/* Special Requests & Admin Note */}
                         {(reservation.additionalInfo ||
                           reservation.confirmedMessage ||
-                          reservation.rejectionReason) && (
+                          reservation.rejectionReason ||
+                          reservation.order) && (
                           <>
                             <Separator className="my-4" />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -602,6 +653,26 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                                     {reservation.confirmedMessage ||
                                       reservation.rejectionReason}
                                   </p>
+                                </div>
+                              )}
+
+                              {reservation.order && (
+                                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
+                                  <Label className="text-sm font-medium mb-2 flex items-center text-blue-900 dark:text-blue-100">
+                                    <UtensilsCrossed className="w-4 h-4 mr-1" />
+                                    Narudžbina za rezervaciju
+                                  </Label>
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openOrder(reservation.order!.id);
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full text-xs border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                                  >
+                                    Prikaži naručene proizvode
+                                  </Button>
                                 </div>
                               )}
                             </div>
@@ -681,6 +752,21 @@ const ReservationDashboard = ({ restaurantId }: { restaurantId?: string }) => {
         onConfirmReservation={handleOverlayConfirmReservation}
         onRejectReservation={handleOverlayRejectReservation}
         isUpdating={isUpdating}
+        onOpenOrder={openOrder}
+      />
+
+      <OrderDetail
+        order={selectedOrder}
+        isOpen={isOrderOverlayOpen}
+        isLoading={isOrderLoading}
+        error={orderError}
+        onClose={closeOrder}
+        canEdit={false}
+        adminNote=""
+        onAdminNoteChange={() => {}}
+        onConfirmOrder={() => {}}
+        onRejectOrder={() => {}}
+        isUpdating={false}
       />
     </div>
   );

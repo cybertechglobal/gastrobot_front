@@ -32,11 +32,34 @@ import { useProducts } from '@/hooks/query/useProducts';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useMenuItem } from '@/hooks/query/useMenuItem';
 
-const comboSchema = z.object({
-  name: z.string().min(1, 'Naziv je obavezan'),
-  productIds: z.array(z.string()).min(1, 'Izaberite bar jedan proizvod'),
-  price: z.string().min(1, 'Cena je obavezna'),
-});
+const comboSchema = z
+  .object({
+    name: z.string().min(1, 'Naziv je obavezan'),
+    productIds: z.array(z.string()).min(1, 'Izaberite bar jedan proizvod'),
+    price: z.string().min(1, 'Cena je obavezna'),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.endDate) return true;
+
+      const endDate = new Date(data.endDate);
+
+      // If startDate exists, endDate must be after startDate
+      if (data.startDate) {
+        const startDate = new Date(data.startDate);
+        return endDate > startDate;
+      }
+
+      // If no startDate, endDate must be after current time
+      return endDate > new Date();
+    },
+    {
+      message: 'Kraj akcije mora biti nakon početka akcije',
+      path: ['endDate'],
+    }
+  );
 
 interface AddEditComboDialogProps {
   restaurantId: string;
@@ -79,6 +102,8 @@ export function AddEditComboDialog({
       name: '',
       productIds: [],
       price: '',
+      startDate: '',
+      endDate: '',
     },
   });
 
@@ -99,6 +124,20 @@ export function AddEditComboDialog({
       const productIds = menuItem.combo.products?.map((p) => p.id) || [];
       form.setValue('productIds', productIds);
       setSelectedProducts(productIds);
+
+      // Set date values - convert ISO string to datetime-local format
+      if (menuItem.combo.startDate) {
+        const startDateLocal = new Date(menuItem.combo.startDate)
+          .toISOString()
+          .slice(0, 16);
+        form.setValue('startDate', startDateLocal);
+      }
+      if (menuItem.combo.endDate) {
+        const endDateLocal = new Date(menuItem.combo.endDate)
+          .toISOString()
+          .slice(0, 16);
+        form.setValue('endDate', endDateLocal);
+      }
 
       // Set initial addon selection
       const addonIds =
@@ -293,6 +332,17 @@ export function AddEditComboDialog({
       data.productIds.forEach((productId) => {
         formData.append('products[]', productId);
       });
+
+      // Convert datetime-local to ISO string
+      if (data.startDate) {
+        const startDateISO = new Date(data.startDate).toISOString();
+        formData.append('startDate', startDateISO);
+      }
+
+      if (data.endDate) {
+        const endDateISO = new Date(data.endDate).toISOString();
+        formData.append('endDate', endDateISO);
+      }
 
       if (selectedImage) {
         formData.append('image', selectedImage);
@@ -540,6 +590,55 @@ export function AddEditComboDialog({
                   {form.formState.errors.price.message}
                 </p>
               )}
+            </div>
+
+            {/* Period trajanja akcije */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-px bg-border flex-1" />
+                <Label className="text-muted-foreground text-sm">
+                  Period važenja akcije (opciono)
+                </Label>
+                <div className="h-px bg-border flex-1" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Start Date */}
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Početak akcije</Label>
+                  <Input
+                    id="startDate"
+                    type="datetime-local"
+                    {...form.register('startDate')}
+                    className="w-full"
+                  />
+                  {form.formState.errors.startDate && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.startDate.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* End Date */}
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">Kraj akcije</Label>
+                  <Input
+                    id="endDate"
+                    type="datetime-local"
+                    min={
+                      form.watch('startDate') ||
+                      new Date().toISOString().slice(0, 16)
+                    }
+                    {...form.register('endDate')}
+                    className="w-full"
+                  />
+                  {form.formState.errors.endDate && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.endDate.message}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <Separator />

@@ -19,6 +19,7 @@ import {
   ChefHat,
   Layers,
   Tag,
+  Calendar,
 } from 'lucide-react';
 import { AddProductDialog } from './AddProductDialog';
 import { EditProductDialog } from './EditProductDialog';
@@ -30,6 +31,8 @@ import { Menu, MenuItem } from '@/types/menu';
 import Image from 'next/image';
 import { deleteCombo } from '@/lib/api/combo';
 import { AddEditComboDialog } from './AddEditComboboxDialog';
+import { format } from 'date-fns';
+import { sr } from 'date-fns/locale';
 
 interface MenuContentProps {
   menu: Menu;
@@ -215,9 +218,33 @@ export function MenuContent({ menu, restaurantId, menuId }: MenuContentProps) {
                             {item.combo.name}
                           </h4>
 
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          <p className="text-sm text-muted-foreground mt-1">
                             {item.combo.products?.length || 0} proizvoda
                           </p>
+
+                          {/* Prikaz perioda važenja akcije */}
+                          {(item.combo.startDate || item.combo.endDate) && (
+                            <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span>
+                                {item.combo.startDate &&
+                                  format(
+                                    new Date(item.combo.startDate),
+                                    'dd.MM.yyyy HH:mm',
+                                    { locale: sr }
+                                  )}
+                                {item.combo.startDate && item.combo.endDate && (
+                                  <span className="mx-1">-</span>
+                                )}
+                                {item.combo.endDate &&
+                                  format(
+                                    new Date(item.combo.endDate),
+                                    'dd.MM.yyyy HH:mm',
+                                    { locale: sr }
+                                  )}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2 flex-shrink-0">

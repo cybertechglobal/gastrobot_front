@@ -12,6 +12,8 @@ export const restaurantSchema = z.object({
     city: z.string().min(1, 'Grad je obavezan'),
     country: z.string().min(1, 'Država je obavezna'),
     zipCode: z.string().min(1, 'Poštanski broj je obavezan'),
+    lat: z.string().optional(),
+    lng: z.string().optional(),
   }),
   hours: z.array(
     z.object({

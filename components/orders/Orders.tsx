@@ -230,16 +230,33 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                          <CardTitle className="text-lg flex items-center">
-                            <UtensilsCrossed className="w-5 h-5 mr-2" />
-                            Sto {order.tableNum}
-                          </CardTitle>
-                          <Badge
-                            variant="secondary"
-                            className="text-sm font-mono"
-                          >
-                            #{order.orderNumber}
-                          </Badge>
+                          {order.reservation ? (
+                            <>
+                              <CardTitle className="text-lg flex items-center">
+                                <Calendar className="w-5 h-5 mr-2" />
+                                Porudžbina za rezervaciju
+                              </CardTitle>
+                              <Badge
+                                variant="secondary"
+                                className="text-sm font-mono"
+                              >
+                                #{order.reservation.reservationNumber}
+                              </Badge>
+                            </>
+                          ) : (
+                            <>
+                              <CardTitle className="text-lg flex items-center">
+                                <UtensilsCrossed className="w-5 h-5 mr-2" />
+                                Sto {order.tableNum}
+                              </CardTitle>
+                              <Badge
+                                variant="secondary"
+                                className="text-sm font-mono"
+                              >
+                                #{order.orderNumber}
+                              </Badge>
+                            </>
+                          )}
                         </div>
                         {getStatusBadge(order.status)}
                       </div>
@@ -282,7 +299,9 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                             className="flex justify-between items-center"
                           >
                             <span className="text-sm">
-                              {item.quantity}x {item.menuItem.product.name}
+                              {item.quantity}x{' '}
+                              {item.menuItem.product?.name ||
+                                item.menuItem.combo?.name}
                             </span>
                             <span className="text-sm font-medium">
                               {item.menuItem.price} RSD
@@ -310,8 +329,8 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                         </div>
                       )}
 
-                      {/* Admin Note Input - Only for managers */}
-                      {canEdit && (
+                      {/* Admin Note Input - Only for managers and non-reservation orders */}
+                      {canEdit && !order.reservation && (
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">
                             Poruka za gosta ukoliko se zahtev odbija (opciono):
@@ -329,32 +348,43 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                       )}
                     </CardContent>
 
-                    {canEdit && (
-                      <CardFooter className="flex space-x-3 pt-4">
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleConfirmOrder(order.id);
-                          }}
-                          disabled={isUpdating}
-                          className="flex-1"
-                        >
-                          <Check className="w-4 h-4 mr-2" />
-                          Prihvati
-                        </Button>
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRejectOrder(order.id);
-                          }}
-                          disabled={isUpdating}
-                          variant="destructive"
-                          className="flex-1"
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Odbij
-                        </Button>
+                    {order.reservation ? (
+                      <CardFooter className="pt-4">
+                        <div className="w-full bg-muted/50 p-4 rounded-lg text-center">
+                          <p className="text-sm text-muted-foreground">
+                            Status ove porudžbine će se automatski promeniti
+                            kada se rezervacija potvrdi ili odbije.
+                          </p>
+                        </div>
                       </CardFooter>
+                    ) : (
+                      canEdit && (
+                        <CardFooter className="flex space-x-3 pt-4">
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleConfirmOrder(order.id);
+                            }}
+                            disabled={isUpdating}
+                            className="flex-1"
+                          >
+                            <Check className="w-4 h-4 mr-2" />
+                            Prihvati
+                          </Button>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRejectOrder(order.id);
+                            }}
+                            disabled={isUpdating}
+                            variant="destructive"
+                            className="flex-1"
+                          >
+                            <X className="w-4 h-4 mr-2" />
+                            Odbij
+                          </Button>
+                        </CardFooter>
+                      )
                     )}
                   </Card>
                 );
@@ -409,16 +439,33 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-start space-x-4">
                             <div>
-                              <h3 className="text-lg font-semibold flex items-center">
-                                <UtensilsCrossed className="w-5 h-5 mr-2" />
-                                Sto {order.tableNum}
-                              </h3>
-                              <Badge
-                                variant="secondary"
-                                className="text-sm font-mono"
-                              >
-                                #{order.orderNumber}
-                              </Badge>
+                              {order.reservation ? (
+                                <>
+                                  <h3 className="text-lg font-semibold flex items-center">
+                                    <Calendar className="w-5 h-5 mr-2" />
+                                    Porudžbina za rezervaciju
+                                  </h3>
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-sm font-mono"
+                                  >
+                                    #{order.reservation.reservationNumber}
+                                  </Badge>
+                                </>
+                              ) : (
+                                <>
+                                  <h3 className="text-lg font-semibold flex items-center">
+                                    <UtensilsCrossed className="w-5 h-5 mr-2" />
+                                    Sto {order.tableNum}
+                                  </h3>
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-sm font-mono"
+                                  >
+                                    #{order.orderNumber}
+                                  </Badge>
+                                </>
+                              )}
                               {order.user ? (
                                 <>
                                   <div className="flex items-center mt-1">
@@ -461,7 +508,8 @@ const OrderDashboard = ({ restaurantId }: { restaurantId?: string }) => {
                                 >
                                   <span>
                                     {item.quantity}x{' '}
-                                    {item.menuItem.product.name}
+                                    {item.menuItem.product?.name ||
+                                      item.menuItem.combo?.name}
                                   </span>
                                   <span>{item.menuItem.price} RSD</span>
                                 </div>

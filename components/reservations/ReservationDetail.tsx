@@ -31,6 +31,7 @@ import {
   TreePine,
   MessageSquare,
   Loader2,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { Reservation } from '@/types/reservation';
 import { Region } from '@/types/region';
@@ -51,6 +52,7 @@ interface ReservationDetailOverlayProps {
   onConfirmReservation?: () => void;
   onRejectReservation?: () => void;
   isUpdating?: boolean;
+  onOpenOrder?: (orderId: string) => void;
 }
 
 const ReservationDetailOverlay: React.FC<ReservationDetailOverlayProps> = ({
@@ -65,6 +67,7 @@ const ReservationDetailOverlay: React.FC<ReservationDetailOverlayProps> = ({
   onConfirmReservation,
   onRejectReservation,
   isUpdating = false,
+  onOpenOrder,
 }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
@@ -237,6 +240,37 @@ const ReservationDetailOverlay: React.FC<ReservationDetailOverlayProps> = ({
             <p className="text-sm text-muted-foreground leading-relaxed">
               {reservation.confirmedMessage || reservation.rejectionReason}
             </p>
+          </div>
+        )}
+
+        {/* Order Information */}
+        {reservation.order && onOpenOrder && (
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
+            <div className="space-y-3">
+              <Label className="text-sm font-medium flex items-center text-blue-900 dark:text-blue-100">
+                <UtensilsCrossed className="w-4 h-4 mr-2" />
+                Rezervacija sadrži narudžbinu
+              </Label>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                Gost je unapred naručio hranu za ovu rezervaciju.
+              </p>
+              {isPending && (
+                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-700 p-3 rounded-md">
+                  <p className="text-xs text-green-700 dark:text-green-300">
+                    Kada potvrdite rezervaciju, narudžbina će automatski biti
+                    potvrđena.
+                  </p>
+                </div>
+              )}
+              <Button
+                onClick={() => onOpenOrder(reservation.order!.id)}
+                variant="outline"
+                size="sm"
+                className="w-full border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+              >
+                Prikaži naručene proizvode
+              </Button>
+            </div>
           </div>
         )}
 

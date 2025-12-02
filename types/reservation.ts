@@ -1,5 +1,6 @@
 import { Region } from './region';
 import { UserDetail } from './user';
+import { Order } from './order';
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'rejected';
 export interface Reservation {
@@ -17,6 +18,7 @@ export interface Reservation {
   assignedTableName: string | null;
   region: Region;
   user: UserDetail;
+  order: Order | null;
 }
 
 export interface ReservationResponse {

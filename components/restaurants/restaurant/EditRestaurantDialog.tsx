@@ -42,6 +42,7 @@ import { z } from 'zod';
 import { fetchCities, updateLocation } from '@/lib/api/locations';
 import { DAYS_OF_WEEK } from '@/lib/utils/translations';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { CityCombobox } from '@/components/CityCombobox';
 
 const workingHourSchema = z.object({
   day: z.string(),
@@ -65,6 +66,8 @@ const restaurantFormSchema = z.object({
   city: z.string().optional(),
   country: z.string().optional(),
   zipCode: z.string().optional(),
+  lat: z.string().optional(),
+  lng: z.string().optional(),
 });
 
 type RestaurantFormData = z.infer<typeof restaurantFormSchema>;
@@ -73,8 +76,18 @@ type WorkingHour = z.infer<typeof workingHourSchema>;
 const useTimeOptions = () => {
   return useMemo(() => {
     const times: string[] = [];
+    // Od 00:00 do 23:30 (trenutni dan)
     for (let h = 0; h < 24; h++) {
       for (let m = 0; m < 60; m += 30) {
+        const hh = h.toString().padStart(2, '0');
+        const mm = m.toString().padStart(2, '0');
+        times.push(`${hh}:${mm}`);
+      }
+    }
+    // Dodaj vreme za sledeći dan (00:00 - 03:00)
+    for (let h = 0; h <= 3; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        if (h === 3 && m > 0) break; // Završi na 03:00
         const hh = h.toString().padStart(2, '0');
         const mm = m.toString().padStart(2, '0');
         times.push(`${hh}:${mm}`);
@@ -146,6 +159,8 @@ export function EditRestaurantDialog({
       city: restaurant.location?.city || '',
       country: restaurant.location?.country || '',
       zipCode: restaurant.location?.zipCode || '',
+      lat: restaurant.location?.lat?.toString() || '',
+      lng: restaurant.location?.lng?.toString() || '',
     },
   });
 
@@ -176,6 +191,8 @@ export function EditRestaurantDialog({
         city: data.city || null,
         country: data.country || null,
         zipCode: data.zipCode || null,
+        lat: data.lat || null,
+        lng: data.lng || null,
       };
 
       const restaurantRes = await updateRestaurant(
@@ -284,20 +301,12 @@ export function EditRestaurantDialog({
               name="city"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full dark:border-0 dark:bg-[#1C1E24]">
-                    <SelectValue placeholder="Beograd" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {cities?.map((city) => (
-                        <SelectItem key={city.id} value={city.name}>
-                          {city.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                <CityCombobox
+                  cities={cities}
+                  value={field.value || ''}
+                  onValueChange={field.onChange}
+                  placeholder="Izaberi grad..."
+                />
               )}
             />
           </div>
@@ -310,6 +319,25 @@ export function EditRestaurantDialog({
         <div className="grid gap-3">
           <Label htmlFor="country">Zemlja</Label>
           <Input id="country" {...register('country')} placeholder="Srbija" />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid gap-3">
+            <Label htmlFor="lat">Latitude (Geografska širina)</Label>
+            <Input
+              id="lat"
+              {...register('lat')}
+              placeholder="44.7866"
+            />
+          </div>
+          <div className="grid gap-3">
+            <Label htmlFor="lng">Longitude (Geografska dužina)</Label>
+            <Input
+              id="lng"
+              {...register('lng')}
+              placeholder="20.4489"
+            />
+          </div>
         </div>
       </div>
 

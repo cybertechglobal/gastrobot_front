@@ -30,6 +30,8 @@ export interface Combobox {
   name: string;
   products?: Product[];
   imageUrl: string;
+  startDate?: string;
+  endDate?: string;
   createdAt: string;
   updatedAt: string;
 }

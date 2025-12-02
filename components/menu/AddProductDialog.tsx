@@ -17,8 +17,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Loader2, ChefHat } from 'lucide-react';
+import { Search, Loader2, ChefHat, MoreHorizontal, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ProductForm } from '../products/ProductForm';
 import { createMenuItem } from '@/lib/api/menu';
 import { useRouter } from 'next/navigation';
@@ -30,6 +36,8 @@ import { AddonGroupSelector } from '../addons/AddonGroupSelector';
 import { useProducts } from '@/hooks/query/useProducts';
 import { useGlobalIngredients } from '@/hooks/query/useIngredients';
 import { useCategories } from '@/hooks/query/useCategories';
+import { CreateProductDialog } from '../products/CreateProductDialog';
+import { Product } from '@/types/product';
 
 const existingItemSchema = z.object({
   itemId: z.string().min(1, 'Molimo izaberite stavku'),
@@ -57,8 +65,15 @@ export function AddProductDialog({
   const [selectedAddonGroupIds, setSelectedAddonGroupIds] = useState<string[]>(
     []
   );
+  const [editProductOpen, setEditProductOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const router = useRouter();
+
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setEditProductOpen(true);
+  };
 
   const {
     products: productsResponse,
@@ -190,42 +205,74 @@ export function AddProductDialog({
                   products.map((product) => (
                     <Card
                       key={product.id}
-                      className={`cursor-pointer transition-colors py-0 m-1 ${
+                      className={`transition-colors py-0 m-1 ${
                         existingForm.watch('itemId') === product.id
                           ? 'ring-1 ring-primary'
                           : 'hover:bg-muted/50'
                       }`}
-                      onClick={() =>
-                        existingForm.setValue('itemId', product.id)
-                      }
                     >
                       <CardContent className="p-3">
                         <div className="flex items-center gap-4">
-                          {product.imageUrl ? (
-                            <div className="w-12 h-12 relative">
-                              <Image
-                                src={product.imageUrl}
-                                alt={product.name}
-                                fill
-                                className="object-cover rounded"
-                              />
-                            </div>
-                          ) : (
-                            <div className="h-12 w-12 bg-gradient-to-br rounded from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center">
-                              <ChefHat className="h-10 w-10 text-slate-300 dark:text-slate-600" />
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <h4 className="font-semibold">{product.name}</h4>
-                            {product.description && (
-                              <p className="text-xs text-muted-foreground">
-                                {product.description}
-                              </p>
+                          <div
+                            className="flex items-center gap-4 flex-1 cursor-pointer"
+                            onClick={() =>
+                              existingForm.setValue('itemId', product.id)
+                            }
+                          >
+                            {product.imageUrl ? (
+                              <div className="w-12 h-12 relative">
+                                <Image
+                                  src={product.imageUrl}
+                                  alt={product.name}
+                                  fill
+                                  className="object-cover rounded"
+                                />
+                              </div>
+                            ) : (
+                              <div className="h-12 w-12 bg-gradient-to-br rounded from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center">
+                                <ChefHat className="h-10 w-10 text-slate-300 dark:text-slate-600" />
+                              </div>
                             )}
-                            <span className="text-xs text-blue-600 font-medium">
-                              {product.category.name}
-                            </span>
+                            <div className="flex-1">
+                              <h4 className="font-semibold">{product.name}</h4>
+                              {product.description && (
+                                <p className="text-xs text-muted-foreground">
+                                  {product.description}
+                                </p>
+                              )}
+                              <span className="text-xs text-blue-600 font-medium">
+                                {product.category.name}
+                              </span>
+                            </div>
                           </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={(e) => e.stopPropagation()} // Dodaj ovo
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-40"
+                              onCloseAutoFocus={(e) => e.preventDefault()} // Dodaj ovo
+                            >
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Dodaj ovo
+                                  handleEditProduct(product);
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Uredi
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </CardContent>
                     </Card>
@@ -289,6 +336,16 @@ export function AddProductDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {/* Edit Product Dialog */}
+      <CreateProductDialog
+        open={editProductOpen}
+        onOpenChange={setEditProductOpen}
+        restaurantId={restaurantId}
+        categories={categories || []}
+        ingredients={ingredients?.data}
+        product={selectedProduct || undefined}
+      />
     </Dialog>
   );
 }
