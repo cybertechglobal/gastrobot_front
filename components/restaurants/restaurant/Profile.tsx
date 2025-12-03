@@ -18,6 +18,8 @@ import {
   CheckSquare,
   Table,
   Image as ImageIcon,
+  Send,
+  Info,
 } from 'lucide-react';
 import {
   Select,
@@ -28,12 +30,18 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import Image from 'next/image';
 import { useMutation } from '@tanstack/react-query';
 import {
   deleteRestaurant,
   updateRestaurant,
   updateRestaurantLogo,
+  publishRestaurantToAssistant,
 } from '@/lib/api/restaurants';
 import { toast } from 'sonner';
 import { DeleteDialog } from '@/components/DeleteDialog';
@@ -528,6 +536,19 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
     },
   });
 
+  const publishMutation = useMutation({
+    mutationFn: async () => {
+      await publishRestaurantToAssistant(restaurant.id);
+    },
+    onSuccess: () => {
+      toast.success('Podaci o restoranu su uspešno objavljeni AI asistentu');
+    },
+    onError: (err: any) => {
+      console.log(err?.status);
+      toast.error('Greška pri objavljivanju podataka');
+    },
+  });
+
   const handleStatusChange = (newStatus: 'active' | 'inactive') => {
     setStatus(newStatus);
     mutation.mutate(newStatus);
@@ -725,6 +746,44 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
                     label="rating:"
                   />
                 </Link>
+
+                {/* Publish button - only for root and manager with active restaurant */}
+                {(userRole === 'root' || userRole === 'manager') && (
+                  <div className="flex items-center gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Info className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>
+                          Objavi podatke AI asistentu za najnovije informacije o
+                          restoranu.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => publishMutation.mutate()}
+                      disabled={
+                        publishMutation.isPending || status !== 'active'
+                      }
+                      className="border-blue-500 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors flex-shrink-0 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Send className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">
+                        {publishMutation.isPending
+                          ? 'Objavljuje se...'
+                          : 'Objavi'}
+                      </span>
+                    </Button>
+                  </div>
+                )}
 
                 {/* Delete button */}
                 <DeleteDialog

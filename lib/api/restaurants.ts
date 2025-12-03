@@ -56,6 +56,12 @@ export async function updateRestaurantSettings(id: string, data: any) {
   });
 }
 
+export async function publishRestaurantToAssistant(id: string) {
+  return apiRequest(`assistants/publish/${id}`, 'PATCH', undefined, {
+    isProtected: true,
+  });
+}
+
 // // Public route (hits backend directly)
 // const publicData = await apiRequest('public/endpoint', 'GET');
 
