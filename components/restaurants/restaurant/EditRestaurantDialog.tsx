@@ -66,8 +66,8 @@ const restaurantFormSchema = z.object({
   city: z.string().optional(),
   country: z.string().optional(),
   zipCode: z.string().optional(),
-  lat: z.string().min(1, 'Latitude je obavezan'),
-  lng: z.string().min(1, 'Longitude je obavezan'),
+  lat: z.coerce.number({ message: 'Latitude mora biti broj' }),
+  lng: z.coerce.number({ message: 'Longitude mora biti broj' }),
 });
 
 type RestaurantFormData = z.infer<typeof restaurantFormSchema>;
@@ -416,7 +416,7 @@ export function EditRestaurantDialog({
                         handleWorkingHourChange(index, 'from', value)
                       }
                     >
-                      <SelectTrigger className="w-28 sm:w-30 pl-9">
+                      <SelectTrigger className="w-36 sm:w-40 pl-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -444,7 +444,7 @@ export function EditRestaurantDialog({
                         handleWorkingHourChange(index, 'to', value)
                       }
                     >
-                      <SelectTrigger className="w-28 sm:w-30 pl-9">
+                      <SelectTrigger className="w-36 sm:w-40 pl-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

@@ -634,7 +634,7 @@ export default function NewRestaurantPage() {
                     methods.setValue(`hours.${index}.from`, value)
                   }
                 >
-                  <SelectTrigger className="w-32 pl-10">
+                  <SelectTrigger className="w-40 pl-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -662,7 +662,7 @@ export default function NewRestaurantPage() {
                     methods.setValue(`hours.${index}.to`, value)
                   }
                 >
-                  <SelectTrigger className="w-32 pl-10">
+                  <SelectTrigger className="w-40 pl-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
