@@ -117,8 +117,8 @@ export default function NewRestaurantPage() {
         city: '',
         country: '',
         zipCode: '',
-        lat: '',
-        lng: '',
+        lat: undefined as any,
+        lng: undefined as any,
       },
       hours: DAYS.map((day) => ({
         day,
@@ -149,8 +149,10 @@ export default function NewRestaurantPage() {
         Boolean(watchedValues.location?.city?.trim()) &&
         Boolean(watchedValues.location?.country?.trim()) &&
         Boolean(watchedValues.location?.zipCode?.trim()) &&
-        Boolean(watchedValues.location?.lat?.trim()) &&
-        Boolean(watchedValues.location?.lng?.trim()),
+        watchedValues.location?.lat !== undefined &&
+        watchedValues.location?.lat !== null &&
+        watchedValues.location?.lng !== undefined &&
+        watchedValues.location?.lng !== null,
 
       // Step 3: Working hours
       watchedValues.hours?.every((h) => !h.open || (h.from && h.to)) ?? false,
@@ -551,8 +553,10 @@ export default function NewRestaurantPage() {
               <Label htmlFor="lat">Latitude (Geo. širina) *</Label>
               <Input
                 id="lat"
+                type="number"
+                step="any"
                 placeholder="44.7866"
-                {...methods.register('location.lat')}
+                {...methods.register('location.lat', { valueAsNumber: true })}
                 className={cn(
                   methods.formState.errors.location?.lat &&
                     'border-red-500 focus-visible:ring-red-500'
@@ -568,8 +572,10 @@ export default function NewRestaurantPage() {
               <Label htmlFor="lng">Longitude (Geo. dužina) *</Label>
               <Input
                 id="lng"
+                type="number"
+                step="any"
                 placeholder="20.4489"
-                {...methods.register('location.lng')}
+                {...methods.register('location.lng', { valueAsNumber: true })}
                 className={cn(
                   methods.formState.errors.location?.lng &&
                     'border-red-500 focus-visible:ring-red-500'

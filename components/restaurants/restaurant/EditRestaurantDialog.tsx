@@ -66,8 +66,8 @@ const restaurantFormSchema = z.object({
   city: z.string().optional(),
   country: z.string().optional(),
   zipCode: z.string().optional(),
-  lat: z.coerce.number({ message: 'Latitude mora biti broj' }),
-  lng: z.coerce.number({ message: 'Longitude mora biti broj' }),
+  lat: z.number({ required_error: 'Latitude je obavezan', invalid_type_error: 'Latitude mora biti broj' }),
+  lng: z.number({ required_error: 'Longitude je obavezan', invalid_type_error: 'Longitude mora biti broj' }),
 });
 
 type RestaurantFormData = z.infer<typeof restaurantFormSchema>;
@@ -349,7 +349,9 @@ export function EditRestaurantDialog({
             <Label htmlFor="lat">Latitude (Geo. širina) *</Label>
             <Input
               id="lat"
-              {...register('lat')}
+              type="number"
+              step="any"
+              {...register('lat', { valueAsNumber: true })}
               placeholder="44.7866"
               className={errors.lat ? 'border-red-500' : ''}
             />
@@ -361,7 +363,9 @@ export function EditRestaurantDialog({
             <Label htmlFor="lng">Longitude (Geo. dužina) *</Label>
             <Input
               id="lng"
-              {...register('lng')}
+              type="number"
+              step="any"
+              {...register('lng', { valueAsNumber: true })}
               placeholder="20.4489"
               className={errors.lng ? 'border-red-500' : ''}
             />

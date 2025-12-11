@@ -84,6 +84,7 @@ function getApiParams(
     ...filters,
     page,
     limit,
+    sortBy: 'createdAt',
   };
 
   // Transform 'all' values for API
