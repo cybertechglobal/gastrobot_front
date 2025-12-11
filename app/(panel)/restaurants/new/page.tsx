@@ -64,22 +64,25 @@ type RestaurantForm = z.infer<typeof restaurantSchema>;
 // Memoized time options generator
 const useTimeOptions = () => {
   return useMemo(() => {
-    const times: string[] = [];
-    // Od 00:00 do 23:30 (trenutni dan)
+    const times: Array<{ value: string; label: string }> = [];
+    // Od 00:00 do 23:30
     for (let h = 0; h < 24; h++) {
       for (let m = 0; m < 60; m += 30) {
         const hh = h.toString().padStart(2, '0');
         const mm = m.toString().padStart(2, '0');
-        times.push(`${hh}:${mm}`);
+        times.push({ value: `${hh}:${mm}`, label: `${hh}:${mm}` });
       }
     }
-    // Dodaj vreme za sledeći dan (00:00 - 03:00)
+    // Dodaj vreme za sledeći dan (00:00 - 03:00 sledećeg dana)
     for (let h = 0; h <= 3; h++) {
       for (let m = 0; m < 60; m += 30) {
         if (h === 3 && m > 0) break; // Završi na 03:00
         const hh = h.toString().padStart(2, '0');
         const mm = m.toString().padStart(2, '0');
-        times.push(`${hh}:${mm}`);
+        times.push({
+          value: `${(h + 24).toString().padStart(2, '0')}:${mm}`,
+          label: `${hh}:${mm} (+1)`,
+        });
       }
     }
     return times;
@@ -88,9 +91,12 @@ const useTimeOptions = () => {
 
 export default function NewRestaurantPage() {
   const timeOptions = useTimeOptions();
+  console.log(timeOptions);
   const router = useRouter();
-  const fromDefault = timeOptions.find((t) => t === '08:00') ?? timeOptions[0];
-  const toDefault = timeOptions.find((t) => t === '22:00') ?? timeOptions[0];
+  const fromDefault =
+    timeOptions.find((t) => t.value === '08:00')?.value ?? timeOptions[0].value;
+  const toDefault =
+    timeOptions.find((t) => t.value === '22:00')?.value ?? timeOptions[0].value;
 
   const { data: cities } = useQuery({
     queryKey: ['cities'],
@@ -106,7 +112,14 @@ export default function NewRestaurantPage() {
       email: '',
       phoneNumber: '',
       logo: null,
-      location: { address: '', city: '', country: '', zipCode: '', lat: '', lng: '' },
+      location: {
+        address: '',
+        city: '',
+        country: '',
+        zipCode: '',
+        lat: '',
+        lng: '',
+      },
       hours: DAYS.map((day) => ({
         day,
         open: false,
@@ -135,7 +148,9 @@ export default function NewRestaurantPage() {
       Boolean(watchedValues.location?.address?.trim()) &&
         Boolean(watchedValues.location?.city?.trim()) &&
         Boolean(watchedValues.location?.country?.trim()) &&
-        Boolean(watchedValues.location?.zipCode?.trim()),
+        Boolean(watchedValues.location?.zipCode?.trim()) &&
+        Boolean(watchedValues.location?.lat?.trim()) &&
+        Boolean(watchedValues.location?.lng?.trim()),
 
       // Step 3: Working hours
       watchedValues.hours?.every((h) => !h.open || (h.from && h.to)) ?? false,
@@ -250,10 +265,23 @@ export default function NewRestaurantPage() {
       formData.append('phoneNumber', data.phoneNumber || '');
       formData.append('locationId', locationId);
 
+      // Funkcija za normalizaciju vremena (24:00 -> 00:00, 25:00 -> 01:00, itd.)
+      const normalizeTime = (time: string) => {
+        const [hours, minutes] = time.split(':').map(Number);
+        if (hours >= 24) {
+          return `${(hours - 24).toString().padStart(2, '0')}:${minutes
+            .toString()
+            .padStart(2, '0')}`;
+        }
+        return time;
+      };
+
       const hours = data.hours
         .filter((day) => day.open)
         .reduce((acc, item) => {
-          acc[item.day.toLowerCase()] = `${item.from}-${item.to}`;
+          const fromNormalized = normalizeTime(item.from);
+          const toNormalized = normalizeTime(item.to);
+          acc[item.day.toLowerCase()] = `${fromNormalized}-${toNormalized}`;
           return acc;
         }, {} as Record<string, string>);
 
@@ -520,7 +548,7 @@ export default function NewRestaurantPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="lat">Latitude (Geografska širina)</Label>
+              <Label htmlFor="lat">Latitude (Geo. širina) *</Label>
               <Input
                 id="lat"
                 placeholder="44.7866"
@@ -537,7 +565,7 @@ export default function NewRestaurantPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lng">Longitude (Geografska dužina)</Label>
+              <Label htmlFor="lng">Longitude (Geo. dužina) *</Label>
               <Input
                 id="lng"
                 placeholder="20.4489"
@@ -612,8 +640,8 @@ export default function NewRestaurantPage() {
                   <SelectContent>
                     <SelectGroup>
                       {timeOptions.map((time) => (
-                        <SelectItem key={time} value={time}>
-                          {time}
+                        <SelectItem key={time.value} value={time.value}>
+                          {time.label}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -640,8 +668,8 @@ export default function NewRestaurantPage() {
                   <SelectContent>
                     <SelectGroup>
                       {timeOptions.map((time) => (
-                        <SelectItem key={time} value={time}>
-                          {time}
+                        <SelectItem key={time.value} value={time.value}>
+                          {time.label}
                         </SelectItem>
                       ))}
                     </SelectGroup>

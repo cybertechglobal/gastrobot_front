@@ -19,8 +19,8 @@ export interface Location {
   city: string;
   country: string;
   zipCode: string;
-  lat: number | null;
-  lng: number | null;
+  lat: number;
+  lng: number;
 }
 
 export interface Restaurant {

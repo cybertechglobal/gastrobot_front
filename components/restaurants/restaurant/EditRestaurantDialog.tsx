@@ -28,7 +28,7 @@ import {
   SelectValue,
   SelectGroup,
 } from '@/components/ui/select';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
@@ -66,8 +66,8 @@ const restaurantFormSchema = z.object({
   city: z.string().optional(),
   country: z.string().optional(),
   zipCode: z.string().optional(),
-  lat: z.string().optional(),
-  lng: z.string().optional(),
+  lat: z.string().min(1, 'Latitude je obavezan'),
+  lng: z.string().min(1, 'Longitude je obavezan'),
 });
 
 type RestaurantFormData = z.infer<typeof restaurantFormSchema>;
@@ -75,22 +75,25 @@ type WorkingHour = z.infer<typeof workingHourSchema>;
 
 const useTimeOptions = () => {
   return useMemo(() => {
-    const times: string[] = [];
-    // Od 00:00 do 23:30 (trenutni dan)
+    const times: Array<{ value: string; label: string }> = [];
+    // Od 00:00 do 23:30
     for (let h = 0; h < 24; h++) {
       for (let m = 0; m < 60; m += 30) {
         const hh = h.toString().padStart(2, '0');
         const mm = m.toString().padStart(2, '0');
-        times.push(`${hh}:${mm}`);
+        times.push({ value: `${hh}:${mm}`, label: `${hh}:${mm}` });
       }
     }
-    // Dodaj vreme za sledeći dan (00:00 - 03:00)
+    // Dodaj vreme za sledeći dan (00:00 - 03:00 sledećeg dana)
     for (let h = 0; h <= 3; h++) {
       for (let m = 0; m < 60; m += 30) {
         if (h === 3 && m > 0) break; // Završi na 03:00
         const hh = h.toString().padStart(2, '0');
         const mm = m.toString().padStart(2, '0');
-        times.push(`${hh}:${mm}`);
+        times.push({
+          value: `${(h + 24).toString().padStart(2, '0')}:${mm}`,
+          label: `${hh}:${mm} (+1)`,
+        });
       }
     }
     return times;
@@ -173,8 +176,25 @@ export function EditRestaurantDialog({
 
   const mutation = useMutation({
     mutationFn: async (data: RestaurantFormData) => {
+      // Funkcija za normalizaciju vremena (24:00 -> 00:00, 25:00 -> 01:00, itd.)
+      const normalizeTime = (time: string) => {
+        const [hours, minutes] = time.split(':').map(Number);
+        if (hours >= 24) {
+          return `${(hours - 24).toString().padStart(2, '0')}:${minutes
+            .toString()
+            .padStart(2, '0')}`;
+        }
+        return time;
+      };
+
       const workingHoursFormatted = data.workingHours.reduce((acc, hour) => {
-        acc[hour.dayKey] = hour.open ? `${hour.from}-${hour.to}` : 'Closed';
+        if (hour.open) {
+          const fromNormalized = normalizeTime(hour.from);
+          const toNormalized = normalizeTime(hour.to);
+          acc[hour.dayKey] = `${fromNormalized}-${toNormalized}`;
+        } else {
+          acc[hour.dayKey] = 'Closed';
+        }
         return acc;
       }, {} as Record<string, string>);
 
@@ -209,7 +229,10 @@ export function EditRestaurantDialog({
     onSuccess: () => {
       toast.success('Restoran uspešno izmenjen');
       setOpen(false);
-      router.refresh();
+      // Dodaj mali delay pre refresh-a da se dialog zatvori
+      setTimeout(() => {
+        router.refresh();
+      }, 100);
     },
     onError: (error: any) => {
       console.error('Update error:', error);
@@ -323,20 +346,28 @@ export function EditRestaurantDialog({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="grid gap-3">
-            <Label htmlFor="lat">Latitude (Geografska širina)</Label>
+            <Label htmlFor="lat">Latitude (Geo. širina) *</Label>
             <Input
               id="lat"
               {...register('lat')}
               placeholder="44.7866"
+              className={errors.lat ? 'border-red-500' : ''}
             />
+            {errors.lat && (
+              <p className="text-sm text-red-500">{errors.lat.message}</p>
+            )}
           </div>
           <div className="grid gap-3">
-            <Label htmlFor="lng">Longitude (Geografska dužina)</Label>
+            <Label htmlFor="lng">Longitude (Geo. dužina) *</Label>
             <Input
               id="lng"
               {...register('lng')}
               placeholder="20.4489"
+              className={errors.lng ? 'border-red-500' : ''}
             />
+            {errors.lng && (
+              <p className="text-sm text-red-500">{errors.lng.message}</p>
+            )}
           </div>
         </div>
       </div>
@@ -391,8 +422,8 @@ export function EditRestaurantDialog({
                       <SelectContent>
                         <SelectGroup>
                           {timeOptions.map((time) => (
-                            <SelectItem key={time} value={time}>
-                              {time}
+                            <SelectItem key={time.value} value={time.value}>
+                              {time.label}
                             </SelectItem>
                           ))}
                         </SelectGroup>
@@ -419,8 +450,8 @@ export function EditRestaurantDialog({
                       <SelectContent>
                         <SelectGroup>
                           {timeOptions.map((time) => (
-                            <SelectItem key={time} value={time}>
-                              {time}
+                            <SelectItem key={time.value} value={time.value}>
+                              {time.label}
                             </SelectItem>
                           ))}
                         </SelectGroup>
@@ -440,6 +471,9 @@ export function EditRestaurantDialog({
       {isDesktop && (
         <DialogFooter>
           <Button type="submit" disabled={isSubmitting || mutation.isPending}>
+            {mutation.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
             Sačuvaj
           </Button>
         </DialogFooter>
@@ -474,6 +508,9 @@ export function EditRestaurantDialog({
             onClick={handleSubmit(onSubmit)}
             disabled={isSubmitting || mutation.isPending}
           >
+            {mutation.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
             Sačuvaj
           </Button>
         </DrawerFooter>
