@@ -36,6 +36,7 @@ export interface Restaurant {
   status: 'active' | 'inactive';
   email: string;
   phoneNumber: string;
+  googleReviewUrl?: string;
   location: Location;
   reviewable: Reviewable
 }
@@ -45,6 +46,7 @@ export type CreateRestaurant = {
   description: string;
   email?: string;
   phoneNumber?: string;
+  googleReviewUrl?: string;
   locationId: string;
   workingHours: Record<
     | 'monday'

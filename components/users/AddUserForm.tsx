@@ -25,6 +25,7 @@ import { z } from 'zod';
 import { Plus, Eye, EyeOff } from 'lucide-react';
 import { createUser } from '@/lib/api/users';
 import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
 
 export const addUserSchema = z
   .object({
@@ -45,7 +46,7 @@ export const addUserSchema = z
       .min(1, 'Lozinka je obavezna')
       .min(8, 'Lozinka mora imati najmanje 8 karaktera'),
     confirmPassword: z.string().min(1, 'Potvrda lozinke je obavezna'),
-    role: z.enum(['waiter', 'manager', 'chef'], {
+    role: z.enum(['waiter', 'manager', 'chef', 'admin'], {
       required_error: 'Molimo izaberite ulogu',
     }),
   })
@@ -66,6 +67,10 @@ export function AddUserForm({ restaurantId }: AddUserFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const { data: session } = useSession();
+  const userRole = session?.user?.restaurantUsers[0]?.role;
+  const isRootUser = userRole === 'root';
+  const canManageManagerRole = userRole === 'root' || userRole === 'admin';
   const qc = useQueryClient();
 
   const {
@@ -223,7 +228,10 @@ export function AddUserForm({ restaurantId }: AddUserFormProps) {
             <Label htmlFor="role">Uloga</Label>
             <Select
               onValueChange={(value) =>
-                setValue('role', value as 'waiter' | 'manager' | 'chef')
+                setValue(
+                  'role',
+                  value as 'waiter' | 'manager' | 'chef' | 'admin'
+                )
               }
               value={roleValue}
             >
@@ -231,9 +239,14 @@ export function AddUserForm({ restaurantId }: AddUserFormProps) {
                 <SelectValue placeholder="Izaberite ulogu" />
               </SelectTrigger>
               <SelectContent>
+                {isRootUser && (
+                  <SelectItem value="admin">Administrator</SelectItem>
+                )}
+                {canManageManagerRole && (
+                  <SelectItem value="manager">Menadžer</SelectItem>
+                )}
                 <SelectItem value="waiter">Konobar</SelectItem>
                 <SelectItem value="chef">Kuvar</SelectItem>
-                <SelectItem value="manager">Menadžer</SelectItem>
               </SelectContent>
             </Select>
             {errors.role && (

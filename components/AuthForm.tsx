@@ -28,6 +28,7 @@ const ROLE_ROUTES = {
   root: '/restaurants',
   waiter: '/orders',
   manager: '/my-restaurant',
+  admin: '/my-restaurant',
 } as const;
 
 const useResendVerification = () => {

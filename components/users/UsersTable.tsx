@@ -326,9 +326,10 @@ const UsersTable = ({ restaurantId }: { restaurantId: string }) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Sve role</SelectItem>
+              <SelectItem value="admin">Administrator</SelectItem>
+              <SelectItem value="manager">Manager</SelectItem>
               <SelectItem value="waiter">Konobar</SelectItem>
               <SelectItem value="chef">Kuvar</SelectItem>
-              <SelectItem value="manager">Manager</SelectItem>
             </SelectContent>
           </Select>
 

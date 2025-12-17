@@ -18,6 +18,7 @@ const ROLE_ROUTES = {
   root: '/restaurants',
   waiter: '/orders',
   manager: '/my-restaurant',
+  admin: 'my-restaurant',
 } as const;
 
 type UserRole = keyof typeof ROLE_ROUTES;
@@ -25,9 +26,9 @@ type UserRole = keyof typeof ROLE_ROUTES;
 // Protected routes that require specific roles
 const ROLE_PROTECTED_ROUTES: Record<string, UserRole[]> = {
   '/restaurants': ['root'],
-  '/orders': ['waiter', 'manager'],
-  '/my-restaurant': ['manager'],
-  '/reservations': ['manager', 'waiter'],
+  '/orders': ['waiter', 'manager', 'admin'],
+  '/my-restaurant': ['manager', 'admin'],
+  '/reservations': ['manager', 'waiter', 'admin'],
   '/admin': ['root'],
   '/chef': ['waiter', 'manager'],
 } as const;

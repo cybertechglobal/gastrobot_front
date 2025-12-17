@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/drawer';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { updateUser } from '@/lib/api/users';
+import { useSession } from 'next-auth/react';
 
 export const editUserSchema = z.object({
   firstname: z
@@ -43,7 +44,7 @@ export const editUserSchema = z.object({
     .string()
     .min(1, 'Email je obavezan')
     .email('Neispravna email adresa'),
-  role: z.enum(['waiter', 'manager', 'chef'], {
+  role: z.enum(['waiter', 'manager', 'chef', 'admin'], {
     required_error: 'Molimo izaberite ulogu',
   }),
 });
@@ -55,7 +56,7 @@ export type UserData = {
   firstname: string;
   lastname: string;
   email: string;
-  role: 'waiter' | 'manager' | 'chef';
+  role: 'waiter' | 'manager' | 'chef' | 'admin';
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;
@@ -78,8 +79,12 @@ export function EditUserForm({
   onOpenChange,
 }: EditUserFormProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  const { data: session } = useSession();
+  const userRole = session?.user?.restaurantUsers[0]?.role;
+  const isRootUser = userRole === 'root';
+  const canManageManagerRole = userRole === 'root' || userRole === 'admin';
   const qc = useQueryClient();
-  
+
   const {
     register,
     handleSubmit,
@@ -168,7 +173,7 @@ export function EditUserForm({
         <Label htmlFor="role">Uloga</Label>
         <Select
           onValueChange={(value) =>
-            setValue('role', value as 'waiter' | 'manager' | 'chef')
+            setValue('role', value as 'waiter' | 'manager' | 'chef' | 'admin')
           }
           value={roleValue}
         >
@@ -176,9 +181,12 @@ export function EditUserForm({
             <SelectValue placeholder="Izaberite ulogu" />
           </SelectTrigger>
           <SelectContent>
+            {isRootUser && <SelectItem value="admin">Administrator</SelectItem>}
+            {canManageManagerRole && (
+              <SelectItem value="manager">Menadžer</SelectItem>
+            )}
             <SelectItem value="waiter">Konobar</SelectItem>
             <SelectItem value="chef">Kuvar</SelectItem>
-            <SelectItem value="manager">Menadžer</SelectItem>
           </SelectContent>
         </Select>
         {errors.role && (
@@ -191,9 +199,7 @@ export function EditUserForm({
         className="w-full"
         disabled={updateUserMutation.isPending}
       >
-        {updateUserMutation.isPending
-          ? 'Ažuriranje...'
-          : 'Ažuriraj korisnika'}
+        {updateUserMutation.isPending ? 'Ažuriranje...' : 'Ažuriraj korisnika'}
       </Button>
     </form>
   );
@@ -217,9 +223,7 @@ export function EditUserForm({
         <DrawerHeader className="text-left">
           <DrawerTitle>Izmeni korisnika</DrawerTitle>
         </DrawerHeader>
-        <div className="px-4 pb-4 overflow-y-auto">
-          {FormContent}
-        </div>
+        <div className="px-4 pb-4 overflow-y-auto">{FormContent}</div>
       </DrawerContent>
     </Drawer>
   );

@@ -111,6 +111,7 @@ export default function NewRestaurantPage() {
       description: '',
       email: '',
       phoneNumber: '',
+      googleReviewUrl: '',
       logo: null,
       location: {
         address: '',
@@ -265,6 +266,7 @@ export default function NewRestaurantPage() {
       formData.append('description', data.description);
       formData.append('email', data.email || '');
       formData.append('phoneNumber', data.phoneNumber || '');
+      formData.append('googleReviewUrl', data.googleReviewUrl || '');
       formData.append('locationId', locationId);
 
       // Funkcija za normalizaciju vremena (24:00 -> 00:00, 25:00 -> 01:00, itd.)
@@ -373,6 +375,24 @@ export default function NewRestaurantPage() {
               'border-red-500 focus-visible:ring-red-500'
           )}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="googleReviewUrl">Google Review URL</Label>
+        <Input
+          id="googleReviewUrl"
+          {...methods.register('googleReviewUrl')}
+          placeholder="Unesite Google Review URL"
+          className={cn(
+            methods.formState.errors.googleReviewUrl &&
+              'border-red-500 focus-visible:ring-red-500'
+          )}
+        />
+        {methods.formState.errors.googleReviewUrl && (
+          <p className="text-sm text-red-500">
+            {methods.formState.errors.googleReviewUrl.message}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">

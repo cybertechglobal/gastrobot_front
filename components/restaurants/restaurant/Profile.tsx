@@ -490,6 +490,11 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
   useEffect(() => {
     const hash = window.location.hash.slice(1); // Ukloni # iz hash-a
     if (hash) {
+      if (hash === 'podesavanja' && userRole === 'manager') {
+        setCurrentView('overview');
+        setBreadcrumb([restaurant.name]);
+        return;
+      }
       const section = sections.find((s) => s.id === hash);
       if (section && section.isVisible) {
         setCurrentView(hash);
@@ -502,6 +507,12 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
       if (hash) {
+        if (hash === 'podesavanja' && userRole === 'manager') {
+          setCurrentView('overview');
+          setBreadcrumb([restaurant.name]);
+          router.push(window.location.pathname, { scroll: false });
+          return;
+        }
         const section = sections.find((s) => s.id === hash);
         if (section && section.isVisible) {
           setCurrentView(hash);
@@ -521,7 +532,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
-  }, [restaurant.name]);
+  }, [restaurant.name, userRole, router]);
 
   const mutation = useMutation({
     mutationFn: async (newStatus: 'active' | 'inactive') => {
@@ -643,7 +654,7 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
       icon: <Settings className="w-6 h-6" />,
       description: 'Konfigurisanje restorana',
       color: 'from-primary to-primary/70',
-      isVisible: true,
+      isVisible: ['root', 'admin'].includes(userRole!),
     },
   ];
 
@@ -785,28 +796,29 @@ const RestaurantProfile: React.FC<RestaurantProfileProps> = ({
                   </div>
                 )}
 
-                {/* Delete button */}
-                <DeleteDialog
-                  trigger={
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-[#F97316] text-destructive hover:text-destructive-800 transition-colors flex-shrink-0 sm:w-auto"
-                    >
-                      <Trash className="w-4 h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Obriši</span>
-                    </Button>
-                  }
-                  description="Ova akcija je nepovratna. Restoran će biti trajno obrisan iz sistema."
-                  successMessage="Restoran je uspešno obrisan"
-                  errorMessage="Greška prilikom brisanja restorana"
-                  mutationOptions={{
-                    mutationFn: () => deleteRestaurant(restaurant.id),
-                    onSuccess: () => {
-                      router.replace('/restaurants');
-                    },
-                  }}
-                />
+                {userRole === 'root' && (
+                  <DeleteDialog
+                    trigger={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-[#F97316] text-destructive hover:text-destructive-800 transition-colors flex-shrink-0 sm:w-auto"
+                      >
+                        <Trash className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Obriši</span>
+                      </Button>
+                    }
+                    description="Ova akcija je nepovratna. Restoran će biti trajno obrisan iz sistema."
+                    successMessage="Restoran je uspešno obrisan"
+                    errorMessage="Greška prilikom brisanja restorana"
+                    mutationOptions={{
+                      mutationFn: () => deleteRestaurant(restaurant.id),
+                      onSuccess: () => {
+                        router.replace('/restaurants');
+                      },
+                    }}
+                  />
+                )}
               </div>
             </div>
           </div>

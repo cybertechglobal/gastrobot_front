@@ -21,7 +21,7 @@ import LOGO_G from '@/public/logo_g.svg';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
-type UserRole = 'root' | 'manager' | 'waiter' | 'default';
+type UserRole = 'root' | 'admin' | 'manager' | 'waiter' | 'default';
 
 // Interface za nav stavke
 interface NavItem {
@@ -38,6 +38,11 @@ const navItems: Record<UserRole, NavItem[]> = {
     { title: 'Recenzije', href: '/reviews', icon: MessageSquare },
     // { title: 'Podešavanja', href: '/settings', icon: Settings },
   ],
+  admin: [
+    { title: 'Restoran', href: '/my-restaurant', icon: Coffee },
+    { title: 'Porudžbine', href: '/orders', icon: ClipboardList },
+    { title: 'Rezervacije', href: '/reservations', icon: ClipboardList },
+  ],
   manager: [
     { title: 'Restoran', href: '/my-restaurant', icon: Coffee },
     { title: 'Porudžbine', href: '/orders', icon: ClipboardList },
@@ -51,7 +56,7 @@ const navItems: Record<UserRole, NavItem[]> = {
 };
 
 function isValidUserRole(role: string): role is UserRole {
-  return ['root', 'manager', 'waiter', 'default'].includes(role);
+  return ['root', 'admin', 'manager', 'waiter', 'default'].includes(role);
 }
 
 export function AppSidebar() {

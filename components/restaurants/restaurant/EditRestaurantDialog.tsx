@@ -61,6 +61,7 @@ const restaurantFormSchema = z.object({
     .optional()
     .or(z.literal('')),
   phoneNumber: z.string().optional(),
+  googleReviewUrl: z.string().optional(),
   workingHours: z.array(workingHourSchema),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -157,6 +158,7 @@ export function EditRestaurantDialog({
       description: restaurant.description,
       email: restaurant.email || '',
       phoneNumber: restaurant.phoneNumber || '',
+      googleReviewUrl: restaurant.googleReviewUrl || '',
       workingHours: defaultWorkingHours,
       address: restaurant.location?.address || '',
       city: restaurant.location?.city || '',
@@ -203,6 +205,7 @@ export function EditRestaurantDialog({
         description: data.description || null,
         email: data.email || null,
         phoneNumber: data.phoneNumber || null,
+        googleReviewUrl: data.googleReviewUrl || null,
         workingHours: workingHoursFormatted,
       };
 
@@ -297,6 +300,15 @@ export function EditRestaurantDialog({
             id="phoneNumber"
             {...register('phoneNumber')}
             placeholder="+381 60 123 4567"
+          />
+        </div>
+
+        <div className="grid gap-3">
+          <Label htmlFor="googleReviewUrl">Google Review URL</Label>
+          <Input
+            id="googleReviewUrl"
+            {...register('googleReviewUrl')}
+            placeholder="Unesite Google Review URL"
           />
         </div>
       </div>

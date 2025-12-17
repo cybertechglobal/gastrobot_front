@@ -30,4 +30,10 @@ export interface RestaurantUsersResponse {
   limit: number;
 }
 
-export type UserRole = 'waiter' | 'manager' | 'chef' | 'root' | undefined;
+export type UserRole =
+  | 'waiter'
+  | 'manager'
+  | 'chef'
+  | 'root'
+  | 'admin'
+  | undefined;
