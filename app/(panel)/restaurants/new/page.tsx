@@ -36,6 +36,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { CountrySelect } from '@/components/CountrySelect';
 import { CityCombobox } from '@/components/CityCombobox';
+import { PhoneInput } from '@/components/PhoneInput';
 
 const DAYS = [
   'Monday',
@@ -116,7 +117,7 @@ export default function NewRestaurantPage() {
       location: {
         address: '',
         city: '',
-        country: '',
+        country: 'Serbia',
         zipCode: '',
         lat: undefined as any,
         lng: undefined as any,
@@ -365,14 +366,17 @@ export default function NewRestaurantPage() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="name">Broj telefona</Label>
-        <Input
-          id="phoneNumber"
-          {...methods.register('phoneNumber')}
-          placeholder="Unesite broj telefona"
-          className={cn(
-            methods.formState.errors.name &&
-              'border-red-500 focus-visible:ring-red-500'
+        <Label htmlFor="phoneNumber">Broj telefona</Label>
+        <Controller
+          name="phoneNumber"
+          control={methods.control}
+          render={({ field }) => (
+            <PhoneInput
+              value={field.value || ''}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              error={methods.formState.errors.phoneNumber?.message}
+            />
           )}
         />
       </div>

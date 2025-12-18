@@ -43,6 +43,7 @@ import { fetchCities, updateLocation } from '@/lib/api/locations';
 import { DAYS_OF_WEEK } from '@/lib/utils/translations';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { CityCombobox } from '@/components/CityCombobox';
+import { PhoneInput } from '@/components/PhoneInput';
 
 const workingHourSchema = z.object({
   day: z.string(),
@@ -52,6 +53,8 @@ const workingHourSchema = z.object({
   to: z.string(),
 });
 
+const phoneRegex = /^\+(\d{1,3})?[\s]{0,}[\s.-]?\(?\d{1,3}\)?([\s]{0,}[\s.-]?\d{1,4}){2,3}$/;
+
 const restaurantFormSchema = z.object({
   name: z.string().min(1, 'Ime je obavezno'),
   description: z.string().optional(),
@@ -60,7 +63,13 @@ const restaurantFormSchema = z.object({
     .email('Neispravna email adresa')
     .optional()
     .or(z.literal('')),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || phoneRegex.test(val),
+      'Broj telefona mora biti u formatu +381651234567'
+    ),
   googleReviewUrl: z.string().optional(),
   workingHours: z.array(workingHourSchema),
   address: z.string().optional(),
@@ -296,10 +305,17 @@ export function EditRestaurantDialog({
 
         <div className="grid gap-3">
           <Label htmlFor="phoneNumber">Broj telefona</Label>
-          <Input
-            id="phoneNumber"
-            {...register('phoneNumber')}
-            placeholder="+381 60 123 4567"
+          <Controller
+            name="phoneNumber"
+            control={control}
+            render={({ field }) => (
+              <PhoneInput
+                value={field.value || ''}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                error={errors.phoneNumber?.message}
+              />
+            )}
           />
         </div>
 
@@ -501,7 +517,7 @@ export function EditRestaurantDialog({
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>{button}</DialogTrigger>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="md:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Izmena restorana</DialogTitle>
           </DialogHeader>

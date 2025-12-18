@@ -27,3 +27,14 @@ export async function fetchCities(
 ): Promise<City[]> {
   return apiRequest('city', 'GET', undefined, options);
 }
+
+export async function createCity(data: { name: string; zipcode: string }) {
+  return apiRequest('city', 'POST', data, { isProtected: true });
+}
+
+export async function updateCity(
+  id: string,
+  data: { name: string; zipcode: string }
+) {
+  return apiRequest(`city/${id}`, 'PATCH', data, { isProtected: true });
+}
