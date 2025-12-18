@@ -52,7 +52,6 @@ export function PhoneInput({
     // Dozvoli samo: brojeve, +, razmake, crtice i zagrade
     const sanitizedValue = newValue.replace(/[^0-9+\s\-().]/g, '');
 
-    // Ako se vrednost promenila nakon sanitizacije, znači da je korisnik pokušao da unese nedozvoljene karaktere
     if (sanitizedValue !== newValue) {
       newValue = sanitizedValue;
     }
