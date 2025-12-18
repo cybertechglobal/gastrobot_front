@@ -12,7 +12,7 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from '@/components/ui/sidebar'; // Core sidebar components :contentReference[oaicite:0]{index=0}
-import { Coffee, List, ClipboardList, MessageSquare } from 'lucide-react';
+import { Coffee, List, ClipboardList, MessageSquare, Building } from 'lucide-react';
 import clsx from 'clsx';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -36,6 +36,7 @@ const navItems: Record<UserRole, NavItem[]> = {
     { title: 'Kategorije', href: '/categories', icon: List },
     { title: 'Sastojci', href: '/ingredients', icon: List },
     { title: 'Recenzije', href: '/reviews', icon: MessageSquare },
+    { title: 'Gradovi', href: '/cities', icon: Building },
     // { title: 'Podešavanja', href: '/settings', icon: Settings },
   ],
   admin: [

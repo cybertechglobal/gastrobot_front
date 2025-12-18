@@ -38,3 +38,9 @@ export async function updateCity(
 ) {
   return apiRequest(`city/${id}`, 'PATCH', data, { isProtected: true });
 }
+
+export async function deleteCity(id: string) {
+  return apiRequest(`city/${id}`, 'DELETE', undefined, {
+    isProtected: true,
+  });
+}

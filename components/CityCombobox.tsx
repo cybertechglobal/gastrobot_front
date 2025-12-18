@@ -17,20 +17,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { City } from '@/types/city';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createCity, updateCity } from '@/lib/api/locations';
-import { toast } from 'sonner';
+import { CityFormDialog } from '@/components/CityFormDialog';
 
 interface CityComboboxProps {
   cities?: City[];
@@ -53,83 +41,19 @@ export function CityCombobox({
 }: CityComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [newCityName, setNewCityName] = React.useState('');
-  const [newCityZipcode, setNewCityZipcode] = React.useState('');
   const [editingCity, setEditingCity] = React.useState<City | null>(null);
-  const queryClient = useQueryClient();
 
-  const createCityMutation = useMutation({
-    mutationFn: (data: { name: string; zipcode: string }) => createCity(data),
-    onSuccess: (newCity: City) => {
-      queryClient.invalidateQueries({ queryKey: ['cities'] });
-      toast.success('Grad uspešno kreiran!');
-      onValueChange(newCity.name);
-      if (onCitySelect) {
-        onCitySelect(newCity);
-      }
-      setDialogOpen(false);
-      setNewCityName('');
-      setNewCityZipcode('');
-      setOpen(false);
-    },
-    onError: () => {
-      toast.error('Greška pri kreiranju grada');
-    },
-  });
-
-  const updateCityMutation = useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: { name: string; zipcode: string };
-    }) => updateCity(id, data),
-    onSuccess: (updatedCity: City) => {
-      queryClient.invalidateQueries({ queryKey: ['cities'] });
-      toast.success('Grad uspešno ažuriran!');
-      onValueChange(updatedCity.name);
-      if (onCitySelect) {
-        onCitySelect(updatedCity);
-      }
-      setDialogOpen(false);
-      setNewCityName('');
-      setNewCityZipcode('');
-      setEditingCity(null);
-      setOpen(false);
-    },
-    onError: () => {
-      toast.error('Greška pri ažuriranju grada');
-    },
-  });
-
-  const handleCreateCity = () => {
-    if (!newCityName.trim() || !newCityZipcode.trim()) {
-      toast.error('Popunite sva polja');
-      return;
+  const handleCitySuccess = (city: City) => {
+    onValueChange(city.name);
+    if (onCitySelect) {
+      onCitySelect(city);
     }
-
-    if (editingCity) {
-      updateCityMutation.mutate({
-        id: editingCity.id,
-        data: {
-          name: newCityName,
-          zipcode: newCityZipcode,
-        },
-      });
-    } else {
-      createCityMutation.mutate({
-        name: newCityName,
-        zipcode: newCityZipcode,
-      });
-    }
+    setOpen(false);
   };
 
   const handleEditCity = (city: City, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingCity(city);
-    setNewCityName(city.name);
-    setNewCityZipcode(city.zipcode);
     setDialogOpen(true);
     setOpen(false);
   };
@@ -225,77 +149,17 @@ export function CityCombobox({
         </PopoverContent>
       </Popover>
 
-      <Dialog
+      <CityFormDialog
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) {
             setEditingCity(null);
-            setNewCityName('');
-            setNewCityZipcode('');
           }
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingCity ? 'Izmeni grad' : 'Kreiraj novi grad'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingCity
-                ? 'Izmenite ime grada i poštanski broj.'
-                : 'Unesite ime grada i poštanski broj.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="city-name">Ime grada *</Label>
-              <Input
-                id="city-name"
-                value={newCityName}
-                onChange={(e) => setNewCityName(e.target.value)}
-                placeholder="npr. Beograd"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="city-zipcode">Poštanski broj *</Label>
-              <Input
-                id="city-zipcode"
-                value={newCityZipcode}
-                onChange={(e) => setNewCityZipcode(e.target.value)}
-                placeholder="npr. 11000"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDialogOpen(false);
-                setNewCityName('');
-                setNewCityZipcode('');
-                setEditingCity(null);
-              }}
-            >
-              Otkaži
-            </Button>
-            <Button
-              onClick={handleCreateCity}
-              disabled={
-                createCityMutation.isPending || updateCityMutation.isPending
-              }
-            >
-              {createCityMutation.isPending || updateCityMutation.isPending
-                ? editingCity
-                  ? 'Ažuriranje...'
-                  : 'Kreiranje...'
-                : editingCity
-                ? 'Ažuriraj'
-                : 'Kreiraj'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        editingCity={editingCity}
+        onSuccess={handleCitySuccess}
+      />
     </>
   );
 }
